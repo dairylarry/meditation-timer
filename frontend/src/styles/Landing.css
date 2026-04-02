@@ -116,8 +116,15 @@
   background: #4e7360;
 }
 
+.landing-links {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
 .btn-history {
   font-size: 0.9rem;
   color: #6b8f7b;
-  padding: 0.5rem 1rem;
+  padding: 0.25rem 1rem;
 }

@@ -59,13 +59,14 @@ export default function Landing() {
         start
       </button>
 
-      <button className="btn-history" onClick={() => navigate('/history')}>
-        history
-      </button>
-
-      <button className="btn-history" onClick={() => navigate('/brahmavihara')}>
-        brahmavihārā 4
-      </button>
+      <div className="landing-links">
+        <button className="btn-history" onClick={() => navigate('/history')}>
+          history
+        </button>
+        <button className="btn-history" onClick={() => navigate('/brahmavihara')}>
+          brahmavihārā 4
+        </button>
+      </div>
     </div>
   )
 }

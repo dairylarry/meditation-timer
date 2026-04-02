@@ -24,10 +24,10 @@ button {
 
 .btn-back {
   position: fixed;
-  bottom: 2rem;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 1rem;
+  left: 1rem;
   font-size: 1rem;
   color: #6b8f7b;
-  padding: 0.75rem 1.5rem;
+  padding: 0.5rem;
+  z-index: 10;
 }
