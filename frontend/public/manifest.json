@@ -3,8 +3,8 @@
   "short_name": "Meditate",
   "start_url": "/meditation-timer/",
   "display": "standalone",
-  "background_color": "#1a1a2e",
-  "theme_color": "#1a1a2e",
+  "background_color": "#e8f0ec",
+  "theme_color": "#e8f0ec",
   "icons": [
     {
       "src": "icon-192.png",

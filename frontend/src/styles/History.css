@@ -1,0 +1,61 @@
+.history {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 2rem 1rem 6rem;
+}
+
+.history-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: #3d5a4c;
+  margin-bottom: 1.5rem;
+}
+
+.history-nav {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.history-arrow {
+  font-size: 1.2rem;
+  padding: 0.5rem 0.75rem;
+  color: #3d5a4c;
+}
+
+.history-arrow:active {
+  color: #5a8a6a;
+}
+
+.history-arrow-hidden {
+  visibility: hidden;
+}
+
+.history-month-label {
+  font-size: 1rem;
+  color: #2c3e50;
+  min-width: 140px;
+  text-align: center;
+  font-weight: 500;
+}
+
+.history-status {
+  color: #6b8f7b;
+  font-size: 0.9rem;
+}
+
+.history-error {
+  color: #c0392b;
+}
+
+.history-months {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+  width: 100%;
+  max-width: 360px;
+}

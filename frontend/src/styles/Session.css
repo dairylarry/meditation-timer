@@ -1,0 +1,63 @@
+.session {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  padding: 2rem;
+  position: relative;
+}
+
+.session-time {
+  font-size: 3rem;
+  font-weight: 300;
+  color: #2c3e50;
+  margin-top: -200px;
+  position: relative;
+  z-index: 1;
+}
+
+.session-countdown {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.session-countdown-value {
+  font-size: 5rem;
+  font-weight: 200;
+  color: #2c3e50;
+  line-height: 1;
+}
+
+.session-countdown-label {
+  font-size: 1rem;
+  font-weight: 400;
+  color: #6b8f7b;
+  margin-top: 0.75rem;
+  letter-spacing: 0.1em;
+}
+
+.session-finish {
+  font-size: 0.8rem;
+  color: #b0c4b8;
+  margin-top: 1rem;
+  position: relative;
+  z-index: 1;
+}
+
+.session-done {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 1;
+}
+
+.session-done-text {
+  font-size: 2rem;
+  font-weight: 400;
+  color: #3d5a4c;
+  letter-spacing: 0.1em;
+}
