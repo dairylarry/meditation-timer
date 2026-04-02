@@ -156,8 +156,10 @@ export default function Session() {
   const timeStr = `${minutes}:${seconds.toString().padStart(2, '0')}`
   const progress = totalSeconds > 0 ? 1 - remaining / totalSeconds : 1
 
+  const dimmed = timerState === 'running'
+
   return (
-    <div className="session">
+    <div className={`session${dimmed ? ' session-dimmed' : ''}`}>
       {timerState === 'countdown' && (
         <div className="session-countdown">
           <div className="session-countdown-value">{countdownLeft}</div>
