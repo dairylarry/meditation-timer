@@ -73,6 +73,9 @@ export default function History() {
 
   return (
     <div className="history">
+      <button className="btn-back" onClick={() => navigate('/')}>
+        ← back
+      </button>
       <h1 className="history-title">History</h1>
 
       <div className="history-nav">
@@ -103,9 +106,6 @@ export default function History() {
         </div>
       )}
 
-      <button className="btn-back" onClick={() => navigate('/')}>
-        ← back
-      </button>
     </div>
   )
 }

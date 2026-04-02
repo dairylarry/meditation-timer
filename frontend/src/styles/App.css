@@ -23,11 +23,8 @@ button {
 }
 
 .btn-back {
-  position: fixed;
-  top: 1rem;
-  left: 1rem;
   font-size: 1rem;
   color: #6b8f7b;
   padding: 0.5rem;
-  z-index: 10;
+  align-self: flex-start;
 }

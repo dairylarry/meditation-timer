@@ -160,6 +160,9 @@ export default function Session() {
 
   return (
     <div className={`session${dimmed ? ' session-dimmed' : ''}`}>
+      <button className="btn-back" onClick={() => navigate('/')}>
+        ← back
+      </button>
       {timerState === 'countdown' && (
         <div className="session-countdown">
           <div className="session-countdown-value">{countdownLeft}</div>
@@ -181,9 +184,6 @@ export default function Session() {
         </div>
       )}
 
-      <button className="btn-back" onClick={() => navigate('/')}>
-        ← back
-      </button>
     </div>
   )
 }

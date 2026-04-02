@@ -6,6 +6,9 @@ export default function Brahmavihara() {
 
   return (
     <div className="brahma">
+      <button className="btn-back" onClick={() => navigate('/')}>
+        ← back
+      </button>
       <h1 className="brahma-title">brahmavihārā 4</h1>
       <p className="brahma-subtitle">the four sublime states of mind</p>
 
@@ -48,9 +51,6 @@ export default function Brahmavihara() {
         </div>
       </div>
 
-      <button className="btn-back" onClick={() => navigate('/')}>
-        ← back
-      </button>
     </div>
   )
 }
