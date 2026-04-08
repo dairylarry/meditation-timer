@@ -416,3 +416,231 @@ Consistent with workout-tracker. `rAF` is more precise but unnecessary — sub-2
 
 6. **History page depth:** ✅ Resolved.
    Show a rolling 3-month window. Simple to implement, easy to extend later.
+
+---
+
+## 15. Authentication Architecture
+
+### Overview
+
+Authentication is added via **AWS Cognito User Pools** — a managed identity service that handles credential storage, token issuance, and session lifecycle. The frontend talks directly to Cognito using the AWS SDK (`amazon-cognito-identity-js` or `@aws-sdk/client-cognito-identity-provider`). No backend API layer is introduced.
+
+---
+
+### Auth Flow Diagram
+
+#### App Load
+```
+App mounts
+    │
+    ▼
+Read localStorage for session tokens
+    │
+    ├── No tokens found ──────────────────→ Show Login screen
+    │
+    └── Tokens found
+            │
+            ▼
+        Call Cognito: refresh IdToken using RefreshToken
+            │
+            ├── Refresh succeeds → Extract userId from IdToken
+            │                    → Store updated tokens in localStorage
+            │                    → Load main app with user context
+            │
+            └── Refresh fails (expired / revoked)
+                        │
+                        ▼
+                    Clear localStorage → Show Login screen
+```
+
+#### Login
+```
+User submits username + password
+    │
+    ▼
+Call Cognito: InitiateAuth (USER_PASSWORD_AUTH flow)
+    │
+    ├── Success → Receive IdToken + AccessToken + RefreshToken
+    │           → Extract userId (sub) from IdToken claims
+    │           → Persist all three tokens to localStorage
+    │           → Store userId in React app state
+    │           → Navigate to Landing
+    │
+    ├── NotAuthorizedException → Show "Invalid username or password"
+    ├── UserNotFoundException  → Show "Invalid username or password"
+    │   (same message — don't reveal which field failed)
+    └── NetworkError           → Show "Connection error, try again"
+```
+
+#### Logout
+```
+User taps "Log out"
+    │
+    ▼
+Call Cognito: GlobalSignOut (invalidates all refresh tokens server-side)
+    │
+    ▼
+Clear localStorage (tokens + any cached user state)
+    │
+    ▼
+Navigate to Login screen
+```
+
+---
+
+### Key Components
+
+#### Frontend
+
+| Component | Purpose |
+|---|---|
+| `lib/auth.js` | Cognito SDK wrapper: `login()`, `logout()`, `refreshSession()`, `getUserId()` |
+| `context/AuthContext.jsx` | React context: holds `userId`, `username`, `isAuthenticated`; provides `login` / `logout` actions |
+| `pages/Login.jsx` | Username + password form; calls `auth.login()`; handles error states |
+| `pages/Account.jsx` | Shows username, "Log out" button |
+| `App.jsx` (updated) | On mount: attempts session restore; renders `<Login />` if unauthenticated, main routes if authenticated |
+
+#### No Backend Required
+Cognito is called directly from the browser using the public **App Client ID** (no client secret — Cognito public app clients are designed for this). The App Client ID is not a secret; it is safe to ship in frontend code.
+
+---
+
+### Cognito Setup (Manual, One-Time)
+
+1. **Create a User Pool** in AWS Console
+   - Sign-in: email (as username)
+   - Password policy: relaxed for MVP (min 6 chars, no complexity requirements)
+   - MFA: disabled
+   - Self-registration: **disabled** (admin-only user creation)
+
+2. **Create an App Client**
+   - Type: Public client (no client secret)
+   - Auth flows: `ALLOW_USER_PASSWORD_AUTH`, `ALLOW_REFRESH_TOKEN_AUTH`
+   - No OAuth / hosted UI needed
+
+3. **Create test user via CLI** (not hardcoded in frontend, excluded from git)
+
+```bash
+# scripts/create-user.sh (gitignored)
+aws cognito-idp admin-create-user \
+  --user-pool-id $COGNITO_USER_POOL_ID \
+  --username barryayang@gmail.com \
+  --temporary-password "drybones" \
+  --message-action SUPPRESS
+
+aws cognito-idp admin-set-user-password \
+  --user-pool-id $COGNITO_USER_POOL_ID \
+  --username barryayang@gmail.com \
+  --password "drybones" \
+  --permanent
+```
+
+The `admin-set-user-password --permanent` step is required to bypass Cognito's forced-password-change flow on first login.
+
+4. **Add to `.env.local`** (gitignored):
+```
+COGNITO_USER_POOL_ID=us-east-1_XXXXXXXX
+```
+
+5. **Add to `.env`** (committed — these are not secrets):
+```
+VITE_COGNITO_USER_POOL_ID=us-east-1_XXXXXXXX
+VITE_COGNITO_CLIENT_ID=XXXXXXXXXXXXXXXXXXXXXXXX
+VITE_AWS_REGION=us-east-1
+```
+
+---
+
+### Session Management
+
+| Token | Storage | Purpose |
+|---|---|---|
+| `IdToken` (JWT, ~1hr) | localStorage | Contains user claims (`sub` = userId, `email`). Passed to DynamoDB calls for scoping. |
+| `AccessToken` (JWT, ~1hr) | localStorage | Used for Cognito API calls (e.g., GlobalSignOut) |
+| `RefreshToken` (opaque, 30 days) | localStorage | Used to silently renew IdToken + AccessToken on app load |
+
+**On app mount**, `refreshSession()` is called before rendering anything. If it succeeds, the user sees the app immediately with no login prompt. If it fails, tokens are cleared and the login screen is shown.
+
+**Token renewal is not proactive** — tokens are only refreshed at app load. For a meditation session lasting up to ~60 min, the existing IdToken will still be valid when the session completes and the DynamoDB write fires. No mid-session renewal needed.
+
+---
+
+### Data Model Changes
+
+The DynamoDB table (`meditation-sessions-db`) needs to be re-keyed to scope data per user.
+
+**Current schema:**
+| Key | Type | Notes |
+|---|---|---|
+| `date` (PK) | String | YYYY-MM-DD |
+| `completedAt` (SK) | String | ISO timestamp |
+
+**Updated schema:**
+| Key | Type | Notes |
+|---|---|---|
+| `userId` (PK) | String | `USER#<cognito-sub>` |
+| `completedAt` (SK) | String | ISO timestamp |
+| `date` | String | YYYY-MM-DD (regular attribute, for display/filtering) |
+| `durationMinutes` | Number | |
+
+**Why move `date` out of the PK:**
+With multi-user support, the natural partition key becomes `userId`. Keeping `date` as PK would mix users' data. `completedAt` as SK still provides ordering and uniqueness within a user.
+
+**Query pattern:**
+- Fetch all sessions for a user: `Query` where PK = `USER#<sub>` (replaces current `Scan`)
+- This is efficient and cheap — no full table scan needed once users are scoped properly
+
+**Migration note:** Existing test records (date-keyed) will be orphaned and can be deleted. Since the table only has dev data, a table wipe is acceptable.
+
+---
+
+### Security Tradeoffs (Explicit)
+
+| Concern | Decision | Rationale |
+|---|---|---|
+| Client secret in frontend | None needed | Cognito public app clients have no client secret by design |
+| App Client ID in frontend | ✅ Safe to expose | Not a credential — only enables auth against a specific user pool |
+| User Pool ID in frontend | ✅ Safe to expose | Same reasoning — publicly known by design |
+| localStorage for tokens | ✅ Acceptable for MVP | XSS risk is theoretical for a personal app; sessionStorage would be slightly safer but loses persistence on tab close |
+| IAM credentials in frontend | ⚠️ Unchanged concern | Pre-existing tradeoff from DynamoDB setup — acceptable for personal app |
+| GlobalSignOut on logout | ✅ Done | Invalidates refresh tokens server-side, not just client-side |
+| No PKCE / OAuth flow | ✅ Acceptable | USER_PASSWORD_AUTH is sufficient for a non-public app with known users |
+
+---
+
+### Edge Cases
+
+| Scenario | Behavior |
+|---|---|
+| Refresh token expired (>30 days inactive) | `refreshSession()` fails → clear tokens → redirect to login |
+| User refreshes page mid-session (timer running) | Timer resets (pre-existing behavior). Auth state is restored from localStorage before app renders — no login prompt. |
+| Failed login attempt | Show error message. No lockout handling in UI (Cognito has built-in rate limiting server-side). |
+| Network failure during login | Catch error → show "Connection error, try again" |
+| Network failure during DynamoDB write | Pre-existing behavior: log warning, don't surface to user |
+| User logs out on one device | RefreshToken invalidated globally. Other devices will fail to refresh on next app load and redirect to login. |
+| Cognito service outage | Login blocked. If already authenticated and token still valid (<1hr), app continues to function. After expiry, redirect to login. |
+
+---
+
+### Assumptions
+
+1. No sign-up flow — users are pre-created by admin via CLI script.
+2. No password reset UI — can be done via AWS Console or CLI if needed.
+3. No MFA — out of scope.
+4. Single Cognito User Pool shared for all environments (MVP simplification). A prod/dev split would be the next step.
+5. The Cognito `sub` claim (a UUID) is used as the canonical userId — not the email. This decouples identity from contact info.
+6. The existing IAM user (`workout-tracker-app`) will be granted `dynamodb:Query` on the updated table (replacing `dynamodb:Scan`).
+
+---
+
+### Implementation Plan (Auth Phase)
+
+1. **AWS Setup** — Create User Pool + App Client in Console; run `create-user.sh`; add env vars
+2. **`lib/auth.js`** — Thin wrapper around `@aws-sdk/client-cognito-identity-provider`: `login()`, `logout()`, `refreshSession()`
+3. **`context/AuthContext.jsx`** — Provider with `userId`, `username`, `isAuthenticated`; session restore on mount
+4. **`pages/Login.jsx`** — Simple form; error handling for bad credentials and network failures
+5. **`App.jsx`** — Gate all routes behind auth check; render `<Login />` if not authenticated
+6. **`lib/sessions.js`** — Update `recordSession()` and `fetchSessions()` to use `USER#<userId>` as PK; switch `Scan` to `Query`
+7. **DynamoDB** — Wipe existing test data; update table key schema (or recreate table)
+8. **`pages/Account.jsx`** — Username display + logout button
+9. **Landing.jsx** — Add "Account" button

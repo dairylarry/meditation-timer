@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, PutCommand, ScanCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
 
 const client = new DynamoDBClient({
   region: import.meta.env.VITE_AWS_REGION,
@@ -15,20 +15,34 @@ const TABLE = 'meditation-sessions-db'
 
 const isDev = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
 
-export async function recordSession({ date, completedAt, durationMinutes }) {
+function pk(userId) {
+  return `USER#${userId}`
+}
+
+export async function recordSession({ userId, date, completedAt, durationMinutes }) {
+  if (!userId) throw new Error('recordSession requires userId')
   if (isDev) {
-    console.log('[dev] skipping DynamoDB write:', { date, completedAt, durationMinutes })
+    console.log('[dev] skipping DynamoDB write:', { userId, date, completedAt, durationMinutes })
     return
   }
   await docClient.send(new PutCommand({
     TableName: TABLE,
-    Item: { date, completedAt, durationMinutes },
+    Item: {
+      userId: pk(userId),
+      completedAt,
+      date,
+      durationMinutes,
+    },
   }))
 }
 
-export async function fetchSessions() {
-  const result = await docClient.send(new ScanCommand({
+export async function fetchSessions({ userId }) {
+  if (!userId) throw new Error('fetchSessions requires userId')
+  const result = await docClient.send(new QueryCommand({
     TableName: TABLE,
+    KeyConditionExpression: '#pk = :pk',
+    ExpressionAttributeNames: { '#pk': 'userId' },
+    ExpressionAttributeValues: { ':pk': pk(userId) },
   }))
   return result.Items || []
 }

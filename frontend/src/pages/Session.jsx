@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import ProgressRing from '../components/ProgressRing'
 import { getOrCreateContext, startKeepalive, stopKeepalive, loadGong, playBuffer, closeContext } from '../lib/audio'
 import { recordSession } from '../lib/sessions'
+import { useAuth } from '../context/AuthContext'
 import '../styles/Session.css'
 
 const COUNTDOWN_SECONDS = 10
@@ -10,6 +11,7 @@ const COUNTDOWN_SECONDS = 10
 export default function Session() {
   const location = useLocation()
   const navigate = useNavigate()
+  const { user } = useAuth()
   const duration = location.state?.duration || parseInt(localStorage.getItem('lastDuration'), 10) || 10
   const showCountdown = location.state?.showCountdown ?? (localStorage.getItem('showCountdown') === 'true')
   const totalSeconds = duration * 60
@@ -34,6 +36,7 @@ export default function Session() {
     // Record to DynamoDB before playing end gong
     try {
       await recordSession({
+        userId: user?.userId,
         date: new Date().toISOString().split('T')[0],
         completedAt: new Date().toISOString(),
         durationMinutes: duration,
@@ -50,7 +53,7 @@ export default function Session() {
 
     stopKeepalive()
     releaseWakeLock()
-  }, [duration])
+  }, [duration, user?.userId])
 
   function releaseWakeLock() {
     if (wakeLockRef.current) {

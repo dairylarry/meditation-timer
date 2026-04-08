@@ -1,0 +1,53 @@
+.account {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 2rem;
+  gap: 2.5rem;
+}
+
+.account-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: #3d5a4c;
+  margin-top: 1rem;
+}
+
+.account-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.account-label {
+  font-size: 0.85rem;
+  color: #6b8578;
+  letter-spacing: 0.1em;
+}
+
+.account-username {
+  font-size: 1.15rem;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.account-logout {
+  font-family: inherit;
+  padding: 0.9rem 2.5rem;
+  border-radius: 2rem;
+  border: 1.5px solid #c2d4c9;
+  background: #fff;
+  color: #3d5a4c;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.account-logout:active {
+  background: #eef4f0;
+}
