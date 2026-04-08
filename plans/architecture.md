@@ -21,7 +21,7 @@ A personal PWA for timed meditation sessions, installable on iPhone. The core lo
 - Multiple sessions per day counted separately
 - Streaks, statistics, or goals
 - Push notifications
-- Multiple users / auth
+- Multiple users (single pre-created user only)
 
 ---
 
@@ -31,17 +31,25 @@ A personal PWA for timed meditation sessions, installable on iPhone. The core lo
 App opens
     │
     ▼
+Login screen (if no valid session)
+    │
+    ▼
 Landing page
   ├─ Shows last used duration (default: 10 min)
   ├─ [−] / [+] buttons to adjust duration
+  ├─ Show countdown toggle (default: off)
   ├─ [Start] → navigates to Session page
-  └─ [History] → navigates to History page
+  ├─ [History] → navigates to History page
+  ├─ [Brahmavihārā 4] → navigates to Brahmavihara page
+  └─ [Account] → navigates to Account page
 
 Session page
-  ├─ Countdown visualization begins immediately
+  ├─ 10s get-ready countdown (gong-mid plays to signal start)
+  ├─ Progress ring animates over session duration
   ├─ At 50% elapsed → gong-mid.mp3 plays
   ├─ At 100% elapsed → gong-end.mp3 plays
   │                  → records completion to DynamoDB (save prior to playing gong-end)
+  ├─ Screen dims during active meditation (simulated via CSS opacity)
   └─ Navigating away at any point → timer resets (no state saved)
 
 History page
@@ -66,7 +74,7 @@ History page
 - Starts countdown immediately on mount
 - Countdown uses Web Audio API (`ctx.currentTime`) as the time source — not `Date.now()` / `setInterval` alone — consistent with workout-tracker approach
 - A silent keepalive oscillator (gain ≈ 0.001) runs for the session duration to hold the iOS audio session open
-- `navigator.audioSession.type = 'ambient'` set at session start (iOS 17.4+) so Spotify keeps playing
+- `navigator.audioSession.type = 'playback'` set at session start (iOS 17.4+) — bypasses iOS silent/mute switch; pauses Spotify
 - Wake lock requested to keep screen on
 - At 50% of duration: decode and play `gong-mid.mp3`
 - At 100%: play `gong-end.mp3`, record completion, show done state
@@ -162,55 +170,72 @@ meditation-timer/
 │   │   ├── manifest.json
 │   │   ├── icon-192.png
 │   │   ├── icon-512.png
-│   │   ├── gong-mid.mp3        ← you provide
-│   │   └── gong-end.mp3        ← you provide
+│   │   ├── gong-mid.mp3
+│   │   └── gong-end.mp3
 │   ├── src/
 │   │   ├── main.jsx
-│   │   ├── App.jsx             ← routes
+│   │   ├── App.jsx             ← AuthProvider + auth-gated routes
+│   │   ├── context/
+│   │   │   └── AuthContext.jsx ← authState, user, login, logout
 │   │   ├── lib/
 │   │   │   ├── audio.js        ← Web Audio API helpers (context, keepalive, mp3 decode)
-│   │   │   └── sessions.js     ← DynamoDB read/write
+│   │   │   ├── auth.js         ← Cognito SDK wrapper (login, logout, refresh)
+│   │   │   └── sessions.js     ← DynamoDB read/write (userId-scoped)
 │   │   ├── pages/
 │   │   │   ├── Landing.jsx
 │   │   │   ├── Session.jsx
-│   │   │   └── History.jsx
+│   │   │   ├── History.jsx
+│   │   │   ├── Brahmavihara.jsx
+│   │   │   ├── Login.jsx
+│   │   │   └── Account.jsx
 │   │   └── styles/
-│   │       └── index.css
+│   │       ├── App.css
+│   │       ├── Landing.css
+│   │       ├── Session.css
+│   │       ├── History.css
+│   │       ├── Login.css
+│   │       └── Account.css
 │   ├── index.html
 │   ├── vite.config.js
 │   └── package.json
+├── scripts/
+│   └── create-user.sh          ← gitignored; admin-creates Cognito user
 └── .github/workflows/deploy.yml
 ```
 
 **Stack:**
-- Vite + React (same as workout-tracker)
-- React Router (client-side routing)
+- Vite + React 18
+- React Router v7 (client-side routing, basename `/meditation-timer/`)
 - Web Audio API (timer source + gong playback)
-- AWS SDK DynamoDB (direct from browser, same pattern as workout-tracker)
+- AWS SDK v3: `@aws-sdk/client-dynamodb`, `@aws-sdk/lib-dynamodb`, `@aws-sdk/client-cognito-identity-provider`
 - vite-plugin-pwa (service worker + installability)
+- GitHub Actions → GitHub Pages (deploy on push to main)
 
 ---
 
 ## 7. Frontend Component Breakdown
 
 ### `App.jsx`
-- Sets up React Router with routes: `/`, `/session`, `/history`
+- Wraps all routes in `<AuthProvider>`
+- `<AuthedRoutes>` inner component reads `authState`: renders blank during `'loading'`, `<Login />` during `'unauthenticated'`, full router when `'authenticated'`
+- Routes: `/`, `/session`, `/history`, `/brahmavihara`, `/account`
 - Passes duration via route state from Landing → Session
 
 ### `Landing.jsx`
-- Reads `lastDuration` from localStorage (default: 10)
-- Local state: `duration`
-- Renders: duration display, [−] [+] buttons, [Start] button, [History] link
-- On Start: writes `lastDuration` to localStorage, navigates to `/session` with `{ duration }` in route state
+- Reads `lastDuration` and `showCountdown` from localStorage
+- Local state: `duration`, `showCountdown`
+- Renders: duration display, [−] [+] buttons, show countdown toggle, [Start] button, [History] / [Brahmavihārā 4] / [Account] links
+- On Start: navigates to `/session` with `{ duration, showCountdown }` in route state
 
 ### `Session.jsx`
-- Props/state: `duration` (from route state), `timerState` (running | done), `display` (timeRemaining)
-- Refs: `ctxRef`, `silentOscRef`, `wakeLockRef`, `halfwayFiredRef`
-- On mount: initializes AudioContext, sets ambient audio session, starts keepalive, requests wake lock, pre-fetches/decodes both mp3 files, starts display interval
-- Display interval (250ms): reads `ctx.currentTime`, updates `timeRemaining`, checks halfway threshold and completion
-- On completion: plays gong-end, records to DynamoDB, transitions to done state
-- `useEffect` cleanup: stops keepalive, cancels scheduled nodes, releases wake lock, closes context
-- Renders: `<ProgressRing />`, time remaining text, back button
+- Props/state: `duration` + `showCountdown` (from route state), `timerState` (countdown | running | done)
+- 10s get-ready countdown phase → gong-mid plays to signal start
+- On mount: initializes AudioContext, sets `playback` audio session, starts keepalive, requests wake lock, pre-fetches/decodes both mp3 files
+- Display interval (250ms): reads `ctx.currentTime`, updates remaining, checks halfway/completion
+- On completion: records to DynamoDB (with `userId` from `useAuth()`), plays gong-end, transitions to done state
+- Screen dims (CSS `.session-dimmed`) during `running` state
+- Shows "session ends at HH:MM" during running state; countdown numbers optional via `showCountdown`
+- `useEffect` cleanup: stops keepalive, releases wake lock, closes context
 
 ### `ProgressRing.jsx`
 - Props: `progress` (0–1)
@@ -240,18 +265,21 @@ export function playBuffer(ctx, buffer)   // createBufferSource + start
 
 ### `lib/sessions.js`
 ```js
-export async function recordSession({ date, completedAt, durationMinutes })
-export async function fetchSessions()     // returns array of session records
+export async function recordSession({ userId, date, completedAt, durationMinutes })
+export async function fetchSessions({ userId })  // Query by USER#<userId> PK
 ```
+- `isDev` check (localhost) skips DynamoDB writes and logs to console instead
 
 ---
 
 ## 8. State Management Approach
 
-No global state manager (no Redux, no Zustand). The app has three isolated pages with no shared runtime state:
-- Duration travels via React Router route state (`navigate('/session', { state: { duration } })`)
-- Audio/timer state lives entirely in refs within `Session.jsx` (consistent with workout-tracker's `IntervalTimer.jsx` approach)
+No global state manager (no Redux, no Zustand). The app has isolated pages with minimal shared state:
+- Auth state lives in `AuthContext` (React Context) — `authState`, `user`, `login`, `logout`
+- Duration + showCountdown travel via React Router route state (`navigate('/session', { state: { ... } })`)
+- Audio/timer state lives entirely in refs within `Session.jsx`
 - History page is fetch-on-mount, local state only
+- Preferences (`lastDuration`, `showCountdown`) persisted in localStorage
 
 This is intentionally flat. The app doesn't need more.
 
@@ -259,28 +287,24 @@ This is intentionally flat. The app doesn't need more.
 
 ## 9. Data Model
 
-### DynamoDB Table: `meditation_sessions`
+### DynamoDB Table: `meditation-sessions-db`
 
 | Attribute | Type | Notes |
 |---|---|---|
-| `date` (PK) | String | `YYYY-MM-DD` — partition key |
-| `completedAt` (SK) | String | ISO 8601 timestamp — sort key, allows multiple records per day |
+| `userId` (PK) | String | `USER#<cognito-sub>` — partition key |
+| `completedAt` (SK) | String | ISO 8601 timestamp — sort key |
+| `date` | String | `YYYY-MM-DD` — regular attribute for display/filtering |
 | `durationMinutes` | Number | Duration in whole minutes |
 
 **Why this shape:**
-- Querying "did I meditate on date X?" is a single `GetItem` by PK — O(1) and cheap
-- Storing `completedAt` as SK future-proofs for multiple sessions per day without any schema change
-- Storing `durationMinutes` captures context without adding complexity
-- No userId needed since there's only one user and no auth
+- `userId` as PK scopes all data per user — `Query` where `userId = USER#<sub>` returns only that user's sessions
+- `completedAt` as SK allows multiple sessions per day without any schema change
+- `date` demoted to regular attribute — no longer needed in key since we query by user, not by date
+- Cognito `sub` (UUID) used instead of email — stable even if email changes
 
-**Future-proofing included:**
-- SK on `completedAt` (not just PK on date) allows multiple records without a breaking schema change
-- DurationMinutes captured for future stats
-
-**Not included (over-engineering):**
-- `userId` attribute — add if auth is ever needed, via a simple table update
-- Session notes/tags — not needed for V1
-- A GSI — not needed until query patterns require it
+**Access pattern:**
+- Fetch all sessions for user: `QueryCommand` with `KeyConditionExpression: userId = :pk`
+- No `Scan` needed — efficient regardless of table size
 
 ---
 
@@ -290,11 +314,15 @@ This is intentionally flat. The app doesn't need more.
 - Same direct-from-browser AWS SDK approach as workout-tracker
 - AWS credentials injected at build time via Vite env vars (`VITE_AWS_*`)
 - Single table, single write per completed session
-- On history page: `scan` the full table (small dataset — one record per day at most — scan is fine indefinitely)
+- On history page: `Query` by `userId` PK (replaces prior `Scan`) — efficient and scoped to the authenticated user
 - No API layer needed for MVP
 
-### localStorage (local preferences)
-- `lastDuration` — integer, minutes — read on Landing mount, written on Start
+### localStorage (local preferences + auth tokens)
+- `lastDuration` — integer, minutes — read on Landing mount, written on duration change
+- `showCountdown` — boolean — persisted across sessions
+- `cognito_id_token` — JWT — used to restore user identity on app load
+- `cognito_access_token` — JWT — used for Cognito API calls (e.g. GlobalSignOut)
+- `cognito_refresh_token` — opaque — used to renew id/access tokens on app load
 
 ### Service Worker (offline)
 - vite-plugin-pwa precaches all static assets (HTML, JS, CSS, mp3 files, icons)
@@ -311,8 +339,8 @@ This is intentionally flat. The app doesn't need more.
 | User closes tab mid-session | Same as above — cleanup fires on unmount. |
 | Page refresh mid-session | Session state is not persisted. User lands on homepage. Timer is gone. Acceptable per spec. |
 | Screen locks during session | Keepalive oscillator holds iOS audio session open. Gongs fire on schedule. Wake lock may be revoked — screen will lock but audio continues. |
-| Spotify / external audio | `navigator.audioSession.type = 'ambient'` (iOS 17.4+) ensures gongs mix with background audio rather than interrupting it. |
-| `navigator.audioSession` not available (older iOS) | Caught in try/catch — gongs still play, but may pause Spotify. Acceptable fallback. |
+| Spotify / external audio | `navigator.audioSession.type = 'playback'` (iOS 17.4+) — bypasses mute switch; intentionally pauses Spotify during session. |
+| `navigator.audioSession` not available (older iOS) | Caught in try/catch — gongs still play but mute switch is respected. |
 | DynamoDB write fails on completion | Log error, don't surface to user (session is done — no need to disrupt the post-meditation moment). Could add a retry or a local fallback queue in V2. |
 | DynamoDB fetch fails on History page | Show empty state with an error message. Don't crash. |
 | Duration set to very large value (e.g. 120 min) | Timer runs correctly. Halfway gong fires at 60 min. No issue. |
@@ -434,23 +462,23 @@ Authentication is added via **AWS Cognito User Pools** — a managed identity se
 App mounts
     │
     ▼
-Read localStorage for session tokens
+Read localStorage for cached IdToken
     │
-    ├── No tokens found ──────────────────→ Show Login screen
+    ├── No token → attempt refresh (below)
     │
-    └── Tokens found
+    └── Token found → immediately render app (fast path, no login prompt)
             │
             ▼
-        Call Cognito: refresh IdToken using RefreshToken
+        Call Cognito: REFRESH_TOKEN_AUTH using RefreshToken (background)
             │
-            ├── Refresh succeeds → Extract userId from IdToken
-            │                    → Store updated tokens in localStorage
-            │                    → Load main app with user context
+            ├── Refresh succeeds → update tokens in localStorage, update user context
             │
-            └── Refresh fails (expired / revoked)
-                        │
-                        ▼
-                    Clear localStorage → Show Login screen
+            ├── Refresh fails (NotAuthorizedException / InvalidParameterException)
+            │       → clear tokens → show Login screen
+            │
+            └── Refresh fails (network error / offline)
+                    → keep existing tokens, keep user logged in
+                    → will retry on next app load when online
 ```
 
 #### Login
@@ -537,31 +565,37 @@ aws cognito-idp admin-set-user-password \
 
 The `admin-set-user-password --permanent` step is required to bypass Cognito's forced-password-change flow on first login.
 
-4. **Add to `.env.local`** (gitignored):
+4. **Add env vars to `.env`** (not committed — add to `.gitignore`):
 ```
-COGNITO_USER_POOL_ID=us-east-1_XXXXXXXX
+VITE_AWS_REGION=us-east-1
+VITE_AWS_ACCESS_KEY_ID=...
+VITE_AWS_SECRET_ACCESS_KEY=...
+VITE_COGNITO_CLIENT_ID=...
 ```
 
-5. **Add to `.env`** (committed — these are not secrets):
-```
-VITE_COGNITO_USER_POOL_ID=us-east-1_XXXXXXXX
-VITE_COGNITO_CLIENT_ID=XXXXXXXXXXXXXXXXXXXXXXXX
-VITE_AWS_REGION=us-east-1
-```
+5. **Add the same vars as GitHub Secrets** (Settings → Secrets → Actions) so the GitHub Actions build bakes them in:
+- `VITE_AWS_REGION`
+- `VITE_AWS_ACCESS_KEY_ID`
+- `VITE_AWS_SECRET_ACCESS_KEY`
+- `VITE_COGNITO_CLIENT_ID`
+
+The User Pool ID is not needed client-side — the App Client ID is scoped to its pool.
 
 ---
 
 ### Session Management
 
-| Token | Storage | Purpose |
-|---|---|---|
-| `IdToken` (JWT, ~1hr) | localStorage | Contains user claims (`sub` = userId, `email`). Passed to DynamoDB calls for scoping. |
-| `AccessToken` (JWT, ~1hr) | localStorage | Used for Cognito API calls (e.g., GlobalSignOut) |
-| `RefreshToken` (opaque, 30 days) | localStorage | Used to silently renew IdToken + AccessToken on app load |
+| Token | Storage | Expiry | Purpose |
+|---|---|---|---|
+| `IdToken` (JWT) | localStorage | 1 day | Contains user claims (`sub` = userId, `email`). Source of user identity. |
+| `AccessToken` (JWT) | localStorage | 1 day | Used for Cognito API calls (e.g. GlobalSignOut) |
+| `RefreshToken` (opaque) | localStorage | 3,650 days (10 years) | Renews IdToken + AccessToken on app load |
 
-**On app mount**, `refreshSession()` is called before rendering anything. If it succeeds, the user sees the app immediately with no login prompt. If it fails, tokens are cleared and the login screen is shown.
+**On app mount:** if a cached IdToken exists, the app renders immediately (no flicker to login). A background refresh updates the tokens. If refresh fails due to a network error (e.g. offline), the user stays logged in with the cached token — they'll refresh next time they're online. If refresh fails due to an auth error (expired/revoked), tokens are cleared and login is shown.
 
-**Token renewal is not proactive** — tokens are only refreshed at app load. For a meditation session lasting up to ~60 min, the existing IdToken will still be valid when the session completes and the DynamoDB write fires. No mid-session renewal needed.
+**Effective session length:** 10 years (driven by RefreshToken expiry). The user should never need to re-login on a personal device under normal circumstances.
+
+**Token renewal is not proactive** — only on app load. IdToken lasts 1 day, sessions are ≤60 min, so no mid-session renewal is needed.
 
 ---
 
@@ -612,10 +646,12 @@ With multi-user support, the natural partition key becomes `userId`. Keeping `da
 
 | Scenario | Behavior |
 |---|---|
-| Refresh token expired (>30 days inactive) | `refreshSession()` fails → clear tokens → redirect to login |
+| Refresh token expired (>10 years inactive) | `refreshSession()` returns `NotAuthorizedException` → clear tokens → redirect to login |
 | User refreshes page mid-session (timer running) | Timer resets (pre-existing behavior). Auth state is restored from localStorage before app renders — no login prompt. |
 | Failed login attempt | Show error message. No lockout handling in UI (Cognito has built-in rate limiting server-side). |
-| Network failure during login | Catch error → show "Connection error, try again" |
+| Network failure during login | Catch error → show "connection error, try again" |
+| App opened offline with cached tokens | User stays logged in (tokens preserved). History page shows error loading data. Timer works fully offline. |
+| App opened offline with no tokens | Stuck on login screen — can't authenticate without network. |
 | Network failure during DynamoDB write | Pre-existing behavior: log warning, don't surface to user |
 | User logs out on one device | RefreshToken invalidated globally. Other devices will fail to refresh on next app load and redirect to login. |
 | Cognito service outage | Login blocked. If already authenticated and token still valid (<1hr), app continues to function. After expiry, redirect to login. |
@@ -633,14 +669,16 @@ With multi-user support, the natural partition key becomes `userId`. Keeping `da
 
 ---
 
-### Implementation Plan (Auth Phase)
+### Implementation Status ✅
 
-1. **AWS Setup** — Create User Pool + App Client in Console; run `create-user.sh`; add env vars
-2. **`lib/auth.js`** — Thin wrapper around `@aws-sdk/client-cognito-identity-provider`: `login()`, `logout()`, `refreshSession()`
-3. **`context/AuthContext.jsx`** — Provider with `userId`, `username`, `isAuthenticated`; session restore on mount
-4. **`pages/Login.jsx`** — Simple form; error handling for bad credentials and network failures
-5. **`App.jsx`** — Gate all routes behind auth check; render `<Login />` if not authenticated
-6. **`lib/sessions.js`** — Update `recordSession()` and `fetchSessions()` to use `USER#<userId>` as PK; switch `Scan` to `Query`
-7. **DynamoDB** — Wipe existing test data; update table key schema (or recreate table)
-8. **`pages/Account.jsx`** — Username display + logout button
-9. **Landing.jsx** — Add "Account" button
+All auth features are implemented and deployed:
+
+1. ✅ **AWS Setup** — User Pool + App Client created; `ALLOW_USER_PASSWORD_AUTH` enabled on App Client; user created via `create-user.sh`; env vars added to `.env` and GitHub Secrets
+2. ✅ **`lib/auth.js`** — Cognito SDK wrapper: `login()`, `logout()`, `refreshSession()`, `getCurrentUser()`, `clearTokens()`
+3. ✅ **`context/AuthContext.jsx`** — `authState` ('loading' | 'authenticated' | 'unauthenticated'), `user` (`{ userId, username }`), `login`, `logout`; session restore with offline resilience
+4. ✅ **`pages/Login.jsx`** + **`styles/Login.css`** — Email + password form; error handling for bad credentials and network failures
+5. ✅ **`App.jsx`** — `AuthProvider` wraps all routes; `AuthedRoutes` gates on `authState`
+6. ✅ **`lib/sessions.js`** — `USER#<userId>` PK; `QueryCommand` replaces `ScanCommand`
+7. ✅ **DynamoDB** — Table recreated with `userId` (PK) + `completedAt` (SK)
+8. ✅ **`pages/Account.jsx`** + **`styles/Account.css`** — Username display + log out button
+9. ✅ **`Landing.jsx`** — "account" link added
