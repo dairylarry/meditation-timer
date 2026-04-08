@@ -32,12 +32,11 @@ export function AuthProvider({ children }) {
         setUser(refreshed)
         setAuthState('authenticated')
       } else if (!cached) {
-        setAuthState('unauthenticated')
-      } else {
-        // We had a cached token but refresh failed — treat as signed out.
-        setUser(null)
+        // No cached token and refresh failed — not logged in.
         setAuthState('unauthenticated')
       }
+      // If cached exists but refresh failed (e.g. offline), keep the user
+      // logged in. They'll get a fresh token next time they're online.
     }
 
     restore()

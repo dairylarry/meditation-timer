@@ -100,8 +100,13 @@ export async function refreshSession() {
     // Refresh flow does not return a new RefreshToken — reuse existing one.
     saveTokens({ ...response.AuthenticationResult, RefreshToken: refreshToken })
     return userFromIdToken(response.AuthenticationResult.IdToken)
-  } catch (_) {
-    clearTokens()
+  } catch (err) {
+    // Only clear tokens on actual auth rejections (expired/revoked refresh token).
+    // Network errors should leave tokens intact so the user stays logged in offline.
+    const name = err?.name || ''
+    if (name === 'NotAuthorizedException' || name === 'InvalidParameterException') {
+      clearTokens()
+    }
     return null
   }
 }
