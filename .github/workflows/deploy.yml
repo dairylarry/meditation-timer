@@ -26,6 +26,11 @@ jobs:
         working-directory: frontend
       - run: npm run build
         working-directory: frontend
+        env:
+          VITE_AWS_REGION: ${{ secrets.VITE_AWS_REGION }}
+          VITE_AWS_ACCESS_KEY_ID: ${{ secrets.VITE_AWS_ACCESS_KEY_ID }}
+          VITE_AWS_SECRET_ACCESS_KEY: ${{ secrets.VITE_AWS_SECRET_ACCESS_KEY }}
+          VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID }}
       - uses: actions/upload-pages-artifact@v3
         with:
           path: frontend/dist

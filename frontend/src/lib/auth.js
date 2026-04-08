@@ -8,11 +8,15 @@ const REGION = import.meta.env.VITE_AWS_REGION
 const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID
 
 // Cognito public-client auth operations (InitiateAuth, etc.) don't require
-// IAM credentials. The SDK still tries to resolve a credential provider, so
-// we hand it an empty one to keep it happy in the browser.
+// IAM credentials, but the SDK still SigV4-signs the request. Cognito ignores
+// the signature for public ops — we just need non-empty credential values so
+// the signer doesn't throw before the HTTP call goes out.
 const client = new CognitoIdentityProviderClient({
   region: REGION,
-  credentials: { accessKeyId: '', secretAccessKey: '' },
+  credentials: {
+    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+  },
 })
 
 const STORAGE_KEYS = {
