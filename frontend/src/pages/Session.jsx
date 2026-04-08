@@ -90,9 +90,10 @@ export default function Session() {
 
   // Initialize audio and countdown on mount
   useEffect(() => {
-    // Set ambient audio session so gongs mix with Spotify (iOS 17.4+)
+    // Use 'playback' so gongs bypass the iOS silent/mute switch (iOS 17.4+).
+    // Tradeoff: pauses Spotify/music when a session starts.
     if (navigator.audioSession) {
-      try { navigator.audioSession.type = 'ambient' } catch (_) {}
+      try { navigator.audioSession.type = 'playback' } catch (_) {}
     }
 
     const ctx = getOrCreateContext()

@@ -38,7 +38,7 @@ export default function Login() {
           className="login-input"
           type="email"
           placeholder="email"
-          autoComplete="username"
+          autoComplete="email"
           value={username}
           onChange={e => setUsername(e.target.value)}
           required
