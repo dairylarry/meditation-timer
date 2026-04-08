@@ -43,7 +43,7 @@ export async function loadGong(audioCtx, url) {
   return audioCtx.decodeAudioData(arrayBuffer)
 }
 
-export function playBuffer(audioCtx, buffer, volume = 0.15) {
+export function playBuffer(audioCtx, buffer, volume = 1.0) {
   const source = audioCtx.createBufferSource()
   const gain = audioCtx.createGain()
   source.buffer = buffer
