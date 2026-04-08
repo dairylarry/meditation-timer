@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import MonthGrid from '../components/MonthGrid'
 import { fetchSessions } from '../lib/sessions'
+import { useAuth } from '../context/AuthContext'
 import '../styles/History.css'
 
 const MONTH_NAMES = [
@@ -11,6 +12,7 @@ const MONTH_NAMES = [
 
 export default function History() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [completedDates, setCompletedDates] = useState(new Set())
   const [sessionsByDate, setSessionsByDate] = useState({})
   const [earliestDate, setEarliestDate] = useState(null)
@@ -29,7 +31,8 @@ export default function History() {
     : true // hide by default until data loads
 
   useEffect(() => {
-    fetchSessions()
+    if (!user?.userId) return
+    fetchSessions({ userId: user.userId })
       .then(sessions => {
         const dates = new Set(sessions.map(s => s.date))
         setCompletedDates(dates)
@@ -50,7 +53,7 @@ export default function History() {
       })
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
-  }, [])
+  }, [user?.userId])
 
   function goBack() {
     if (month === 0) {
