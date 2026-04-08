@@ -17,13 +17,14 @@ export default function Login() {
     try {
       await login(username.trim(), password)
     } catch (err) {
+      console.error('Login error:', err, JSON.stringify(err))
       const name = err?.name || ''
       if (name === 'NotAuthorizedException' || name === 'UserNotFoundException') {
         setError('invalid username or password')
       } else if (name === 'NetworkError' || name === 'TypeError') {
         setError('connection error, try again')
       } else {
-        setError(`${err?.name}: ${err?.message}`)
+        setError(JSON.stringify(err) || String(err) || 'unknown error')
       }
       setSubmitting(false)
     }
