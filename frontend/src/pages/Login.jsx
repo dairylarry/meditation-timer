@@ -36,16 +36,20 @@ export default function Login() {
       <form className="login-form" onSubmit={handleSubmit}>
         <input
           className="login-input"
+          id="email"
           type="email"
+          name="email"
           placeholder="email"
-          autoComplete="email"
+          autoComplete="username"
           value={username}
           onChange={e => setUsername(e.target.value)}
           required
         />
         <input
           className="login-input"
+          id="password"
           type="password"
+          name="password"
           placeholder="password"
           autoComplete="current-password"
           value={password}
