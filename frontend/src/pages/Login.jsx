@@ -23,7 +23,7 @@ export default function Login() {
       } else if (name === 'NetworkError' || name === 'TypeError') {
         setError('connection error, try again')
       } else {
-        setError(err?.message || 'something went wrong')
+        setError(`${err?.name}: ${err?.message}`)
       }
       setSubmitting(false)
     }
