@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
+import { fetchSessions } from '../lib/sessions'
+import { useAuth } from '../context/AuthContext'
 import '../styles/Landing.css'
 
 export default function Landing() {
   const navigate = useNavigate()
+  const { user } = useAuth()
   const [duration, setDuration] = useState(10)
   const [showCountdown, setShowCountdown] = useState(false)
   const [hasTodaySession, setHasTodaySession] = useState(false)
@@ -13,11 +16,17 @@ export default function Landing() {
     if (savedDuration) setDuration(parseInt(savedDuration, 10))
     const savedShow = localStorage.getItem('showCountdown')
     if (savedShow !== null) setShowCountdown(savedShow === 'true')
-    // Show "reflect" link only if the user meditated today (localStorage hint).
-    const lastSessionDate = localStorage.getItem('lastSessionDate')
-    const today = new Date().toISOString().split('T')[0]
-    setHasTodaySession(lastSessionDate === today)
   }, [])
+
+  useEffect(() => {
+    if (!user?.userId) return
+    const today = new Date().toLocaleDateString('en-CA') // YYYY-MM-DD in local time
+    fetchSessions({ userId: user.userId })
+      .then(sessions => {
+        setHasTodaySession(sessions.some(s => s.date === today))
+      })
+      .catch(() => {})
+  }, [user?.userId])
 
   useEffect(() => {
     localStorage.setItem('lastDuration', String(duration))
