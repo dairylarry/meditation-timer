@@ -80,15 +80,15 @@ export default function LogSession() {
         </div>
 
         {error && <div className="log-error">{error}</div>}
-      </div>
 
-      <button
-        className="log-save-btn"
-        onClick={handleSave}
-        disabled={saving}
-      >
-        {saving ? 'saving…' : 'save'}
-      </button>
+        <button
+          className="log-save-btn"
+          onClick={handleSave}
+          disabled={saving}
+        >
+          {saving ? 'saving…' : 'save'}
+        </button>
+      </div>
     </div>
   )
 }
