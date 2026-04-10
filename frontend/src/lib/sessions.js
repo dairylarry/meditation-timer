@@ -19,25 +19,19 @@ function pk(userId) {
   return `USER#${userId}`
 }
 
-export async function recordSession({ userId, date, completedAt, durationMinutes }) {
+export async function recordSession({ userId, date, completedAt, durationMinutes, note }) {
   // Always record the hint locally — Landing uses this to decide whether to show
   // the reflect link without needing a network call. Do this before the userId
   // guard so it works even if auth is still loading.
   try { localStorage.setItem('lastSessionDate', date) } catch (_) {}
   if (!userId) throw new Error('recordSession requires userId')
   if (isDev) {
-    console.log('[dev] skipping DynamoDB write:', { userId, date, completedAt, durationMinutes })
+    console.log('[dev] skipping DynamoDB write:', { userId, date, completedAt, durationMinutes, note })
     return
   }
-  await docClient.send(new PutCommand({
-    TableName: TABLE,
-    Item: {
-      userId: pk(userId),
-      completedAt,
-      date,
-      durationMinutes,
-    },
-  }))
+  const item = { userId: pk(userId), completedAt, date, durationMinutes }
+  if (note) item.note = note
+  await docClient.send(new PutCommand({ TableName: TABLE, Item: item }))
 }
 
 export async function updateSessionNote({ userId, completedAt, note }) {
