@@ -116,6 +116,26 @@
   background: var(--accent-hover);
 }
 
+.landing-start-row {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-log {
+  position: absolute;
+  left: calc(100% + 0.75rem);
+  font-size: 1.1rem;
+  color: var(--text-dim);
+  padding: 0.25rem 0.5rem;
+  transition: color 0.2s;
+}
+
+.btn-log:active {
+  color: var(--accent);
+}
+
 .landing-links {
   display: flex;
   flex-direction: column;

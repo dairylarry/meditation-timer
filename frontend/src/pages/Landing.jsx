@@ -65,12 +65,15 @@ export default function Landing() {
         </span>
       </label>
 
-      <button
-        className="btn-start"
-        onClick={() => navigate('/session', { state: { duration, showCountdown } })}
-      >
-        start
-      </button>
+      <div className="landing-start-row">
+        <button
+          className="btn-start"
+          onClick={() => navigate('/session', { state: { duration, showCountdown } })}
+        >
+          start
+        </button>
+        <button className="btn-log" onClick={() => navigate('/log')}>+</button>
+      </div>
 
       <div className="landing-links">
         {hasTodaySession && (
@@ -78,9 +81,6 @@ export default function Landing() {
             reflect
           </button>
         )}
-        <button className="btn-history" onClick={() => navigate('/log')}>
-          + log without timer
-        </button>
         <button className="btn-history" onClick={() => navigate('/history')}>
           history
         </button>
