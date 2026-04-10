@@ -40,11 +40,18 @@
   font-size: 2.5rem;
   font-weight: 200;
   color: var(--text);
-  background: transparent;
-  border: none;
+  background: var(--surface);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
   outline: none;
   text-align: center;
-  padding: 0.25rem 0;
+  padding: 0.5rem 1rem;
+  width: 100%;
+  transition: border-color 0.2s;
+}
+
+.log-session-time:focus {
+  border-color: var(--accent);
 }
 
 .log-session-duration {
@@ -128,7 +135,7 @@
   letter-spacing: 0.05em;
   cursor: pointer;
   width: 100%;
-  margin-top: 0.5rem;
+  margin-top: 1.5rem;
   transition: background 0.2s, opacity 0.2s;
 }
 

@@ -73,14 +73,14 @@ export default function Landing() {
       </button>
 
       <div className="landing-links">
-        <button className="btn-history" onClick={() => navigate('/log')}>
-          + log session
-        </button>
         {hasTodaySession && (
           <button className="btn-history" onClick={() => navigate('/reflect')}>
             reflect
           </button>
         )}
+        <button className="btn-history" onClick={() => navigate('/log')}>
+          log without timer
+        </button>
         <button className="btn-history" onClick={() => navigate('/history')}>
           history
         </button>
