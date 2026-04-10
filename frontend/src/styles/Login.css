@@ -12,7 +12,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #3d5a4c;
+  color: #5a8a6c;
 }
 
 .login-form {
@@ -28,19 +28,19 @@
   font-size: 1rem;
   padding: 0.85rem 1rem;
   border-radius: 12px;
-  border: 1.5px solid #c2d4c9;
-  background: #fff;
-  color: #2c3e50;
+  border: 1.5px solid #364d3e;
+  background: #263328;
+  color: #ccd8d0;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .login-input:focus {
-  border-color: #3d5a4c;
+  border-color: #5a8a6c;
 }
 
 .login-error {
-  color: #c0392b;
+  color: #e06050;
   font-size: 0.85rem;
   text-align: center;
 }
@@ -50,8 +50,8 @@
   padding: 0.9rem;
   border-radius: 2rem;
   border: none;
-  background: #3d5a4c;
-  color: #fff;
+  background: #5a8a6c;
+  color: #1e2b23;
   font-size: 1.05rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -60,7 +60,7 @@
 }
 
 .login-btn:active {
-  background: #4e7360;
+  background: #6a9e7c;
 }
 
 .login-btn:disabled {

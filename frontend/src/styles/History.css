@@ -10,7 +10,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #3d5a4c;
+  color: #5a8a6c;
   margin-bottom: 1.5rem;
 }
 
@@ -24,11 +24,11 @@
 .history-arrow {
   font-size: 1.2rem;
   padding: 0.5rem 0.75rem;
-  color: #3d5a4c;
+  color: #7aa090;
 }
 
 .history-arrow:active {
-  color: #5a8a6a;
+  color: #5a8a6c;
 }
 
 .history-arrow-hidden {
@@ -37,19 +37,19 @@
 
 .history-month-label {
   font-size: 1rem;
-  color: #2c3e50;
+  color: #ccd8d0;
   min-width: 140px;
   text-align: center;
   font-weight: 500;
 }
 
 .history-status {
-  color: #6b8f7b;
+  color: #7aa090;
   font-size: 0.9rem;
 }
 
 .history-error {
-  color: #c0392b;
+  color: #e06050;
 }
 
 .history-months {
@@ -65,8 +65,8 @@
   max-width: 360px;
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: #fff;
-  border: 1px solid #c2d4c9;
+  background: #263328;
+  border: 1px solid #364d3e;
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -75,12 +75,12 @@
 
 .history-detail-date {
   font-size: 0.85rem;
-  color: #6b8f7b;
+  color: #7aa090;
   letter-spacing: 0.05em;
   text-transform: lowercase;
   text-align: center;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #eef4f0;
+  border-bottom: 1px solid #2f3d35;
 }
 
 .history-detail-session {
@@ -90,7 +90,7 @@
 }
 
 .history-detail-session + .history-detail-session {
-  border-top: 1px solid #eef4f0;
+  border-top: 1px solid #2f3d35;
   padding-top: 1rem;
 }
 
@@ -98,7 +98,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.95rem;
-  color: #2c3e50;
+  color: #ccd8d0;
 }
 
 .history-detail-time {
@@ -106,15 +106,15 @@
 }
 
 .history-detail-duration {
-  color: #6b8f7b;
+  color: #7aa090;
 }
 
 .history-detail-note {
   font-size: 0.9rem;
-  color: #3d5a4c;
+  color: #ccd8d0;
   line-height: 1.5;
   white-space: pre-wrap;
-  background: #f0f4f1;
+  background: #2a3829;
   padding: 0.75rem;
   border-radius: 8px;
 }

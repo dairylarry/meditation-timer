@@ -6,8 +6,8 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #e8f0ec;
-  color: #2c3e50;
+  background: #1e2b23;
+  color: #ccd8d0;
   -webkit-font-smoothing: antialiased;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
@@ -24,7 +24,7 @@ button {
 
 .btn-back {
   font-size: 1rem;
-  color: #6b8f7b;
+  color: #7aa090;
   padding: 0.5rem;
   align-self: flex-start;
 }

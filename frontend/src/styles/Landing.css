@@ -12,7 +12,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #3d5a4c;
+  color: #5a8a6c;
 }
 
 .duration-picker {
@@ -25,18 +25,18 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 1.5px solid #c2d4c9;
+  border: 1.5px solid #364d3e;
   font-size: 1.5rem;
-  color: #3d5a4c;
+  color: #5a8a6c;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #fff;
+  background: #263328;
   transition: background 0.2s;
 }
 
 .picker-btn:active {
-  background: #d5e5da;
+  background: #2f3d35;
 }
 
 .duration-display {
@@ -50,12 +50,12 @@
   font-size: 3.5rem;
   font-weight: 300;
   line-height: 1;
-  color: #2c3e50;
+  color: #ccd8d0;
 }
 
 .duration-unit {
   font-size: 0.85rem;
-  color: #6b8f7b;
+  color: #7aa090;
   margin-top: 0.25rem;
   letter-spacing: 0.1em;
 }
@@ -69,20 +69,20 @@
 
 .toggle-label {
   font-size: 0.9rem;
-  color: #6b8f7b;
+  color: #7aa090;
 }
 
 .toggle-switch {
   width: 44px;
   height: 26px;
   border-radius: 13px;
-  background: #c2d4c9;
+  background: #364d3e;
   position: relative;
   transition: background 0.2s;
 }
 
 .toggle-switch.toggle-on {
-  background: #3d5a4c;
+  background: #5a8a6c;
 }
 
 .toggle-knob {
@@ -92,7 +92,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #fff;
+  background: #ccd8d0;
   transition: transform 0.2s;
 }
 
@@ -104,8 +104,8 @@
   width: 160px;
   padding: 0.9rem;
   border-radius: 2rem;
-  background: #3d5a4c;
-  color: #fff;
+  background: #5a8a6c;
+  color: #1e2b23;
   font-size: 1.1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -113,7 +113,7 @@
 }
 
 .btn-start:active {
-  background: #4e7360;
+  background: #6a9e7c;
 }
 
 .landing-links {
@@ -125,6 +125,6 @@
 
 .btn-history {
   font-size: 0.9rem;
-  color: #6b8f7b;
+  color: #7aa090;
   padding: 0.25rem 1rem;
 }
