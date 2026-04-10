@@ -120,7 +120,7 @@
 
 .reflect-save {
   font-family: inherit;
-  padding: 0.9rem;
+  padding: 0.9rem 3rem;
   border-radius: 2rem;
   border: none;
   background: var(--accent);
@@ -129,6 +129,7 @@
   font-weight: 500;
   letter-spacing: 0.05em;
   cursor: pointer;
+  align-self: center;
   transition: background 0.2s, opacity 0.2s;
 }
 
