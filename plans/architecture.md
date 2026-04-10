@@ -451,234 +451,578 @@ Consistent with workout-tracker. `rAF` is more precise but unnecessary — sub-2
 
 ### Overview
 
-Authentication is added via **AWS Cognito User Pools** — a managed identity service that handles credential storage, token issuance, and session lifecycle. The frontend talks directly to Cognito using the AWS SDK (`amazon-cognito-identity-js` or `@aws-sdk/client-cognito-identity-provider`). No backend API layer is introduced.
+Authentication uses **AWS Cognito User Pools** — a managed identity service that issues JWTs, handles credential storage, and manages token lifecycle. The React frontend calls Cognito directly from the browser via the AWS SDK v3. **No backend API layer is required.**
+
+Users are pre-created by an admin CLI script. There is no self-registration flow. The canonical user identifier is the Cognito `sub` claim (a stable UUID), not the email address.
 
 ---
 
-### Auth Flow Diagram
+### How It Works End-to-End
 
-#### App Load
 ```
-App mounts
+Browser                          Cognito                    DynamoDB
+  │                                 │                           │
+  │  InitiateAuth(email, password)  │                           │
+  │────────────────────────────────▶│                           │
+  │  ◀── IdToken + AccessToken +    │                           │
+  │       RefreshToken              │                           │
+  │                                 │                           │
+  │  Decode IdToken (base64, local) │                           │
+  │  Extract sub → userId           │                           │
+  │  Store all 3 tokens in          │                           │
+  │  localStorage                   │                           │
+  │                                 │                           │
+  │  [on next app load]             │                           │
+  │  REFRESH_TOKEN_AUTH ───────────▶│                           │
+  │  ◀── new IdToken + AccessToken  │                           │
+  │                                 │                           │
+  │  [write session]                │                           │
+  │  PutItem(userId=USER#<sub>) ────│──────────────────────────▶│
+  │                                 │                           │
+  │  [read history]                 │                           │
+  │  Query(userId=USER#<sub>) ──────│──────────────────────────▶│
+  │  ◀── user's sessions            │                           │
+```
+
+The Cognito `sub` is never shown to the user — it is only used internally as the DynamoDB partition key prefix (`USER#<sub>`).
+
+---
+
+### Auth Flows
+
+#### App Load (session restore)
+```
+App mounts → AuthProvider useEffect runs
     │
     ▼
-Read localStorage for cached IdToken
+getCurrentUser() — reads cached IdToken from localStorage, decodes JWT locally
     │
-    ├── No token → attempt refresh (below)
+    ├── Token found → setUser(cached), setAuthState('authenticated')  ← instant, no network
+    │       │
+    │       ▼
+    │   refreshSession() runs in background
+    │       ├── Success → update user + tokens in localStorage (silent)
+    │       ├── NotAuthorizedException / InvalidParameterException
+    │       │       → clearTokens() → setAuthState('unauthenticated') → Login shown
+    │       └── Network error (offline, timeout, DNS failure)
+    │               → do nothing — keep existing cached auth state
+    │               → tokens are NOT cleared
+    │               → user stays logged in until next successful refresh
     │
-    └── Token found → immediately render app (fast path, no login prompt)
+    └── No token found
             │
             ▼
-        Call Cognito: REFRESH_TOKEN_AUTH using RefreshToken (background)
-            │
-            ├── Refresh succeeds → update tokens in localStorage, update user context
-            │
-            ├── Refresh fails (NotAuthorizedException / InvalidParameterException)
-            │       → clear tokens → show Login screen
-            │
-            └── Refresh fails (network error / offline)
-                    → keep existing tokens, keep user logged in
-                    → will retry on next app load when online
+        refreshSession() — try RefreshToken from localStorage
+            ├── Success → setUser, setAuthState('authenticated')
+            └── Fails for any reason → setAuthState('unauthenticated') → Login shown
 ```
 
 #### Login
 ```
-User submits username + password
+User submits email + password → handleSubmit()
     │
     ▼
-Call Cognito: InitiateAuth (USER_PASSWORD_AUTH flow)
+login(email, password) → InitiateAuthCommand(USER_PASSWORD_AUTH)
     │
-    ├── Success → Receive IdToken + AccessToken + RefreshToken
-    │           → Extract userId (sub) from IdToken claims
-    │           → Persist all three tokens to localStorage
-    │           → Store userId in React app state
-    │           → Navigate to Landing
+    ├── Success (AuthenticationResult present)
+    │     → saveTokens({ IdToken, AccessToken, RefreshToken }) to localStorage
+    │     → decodeJwt(IdToken) → extract { sub, email }
+    │     → return { userId: sub, username: email }
+    │     → AuthContext: setUser, setAuthState('authenticated')
+    │     → App re-renders → AuthedRoutes renders main app
     │
-    ├── NotAuthorizedException → Show "Invalid username or password"
-    ├── UserNotFoundException  → Show "Invalid username or password"
-    │   (same message — don't reveal which field failed)
-    └── NetworkError           → Show "Connection error, try again"
+    ├── response.AuthenticationResult missing (Cognito challenge returned)
+    │     → throw Error('Authentication challenge not supported')
+    │     → Login shows generic error
+    │
+    ├── NotAuthorizedException → "invalid username or password"
+    ├── UserNotFoundException  → "invalid username or password"  ← same msg, no field hint
+    ├── NetworkError / TypeError → "connection error, try again"
+    └── Anything else → JSON.stringify(err) shown (debug — clean up for prod)
 ```
 
 #### Logout
 ```
-User taps "Log out"
+User taps "log out" → logout()
     │
     ▼
-Call Cognito: GlobalSignOut (invalidates all refresh tokens server-side)
+GlobalSignOutCommand(AccessToken) → Cognito invalidates ALL refresh tokens for this user
+    │   (error swallowed — always proceed to local cleanup)
+    ▼
+clearTokens() → removes cognito_id_token, cognito_access_token, cognito_refresh_token
     │
     ▼
-Clear localStorage (tokens + any cached user state)
+AuthContext: setUser(null), setAuthState('unauthenticated')
     │
     ▼
-Navigate to Login screen
+App re-renders → AuthedRoutes renders <Login />
 ```
 
 ---
 
-### Key Components
+### File Structure
 
-#### Frontend
-
-| Component | Purpose |
-|---|---|
-| `lib/auth.js` | Cognito SDK wrapper: `login()`, `logout()`, `refreshSession()`, `getUserId()` |
-| `context/AuthContext.jsx` | React context: holds `userId`, `username`, `isAuthenticated`; provides `login` / `logout` actions |
-| `pages/Login.jsx` | Username + password form; calls `auth.login()`; handles error states |
-| `pages/Account.jsx` | Shows username, "Log out" button |
-| `App.jsx` (updated) | On mount: attempts session restore; renders `<Login />` if unauthenticated, main routes if authenticated |
-
-#### No Backend Required
-Cognito is called directly from the browser using the public **App Client ID** (no client secret — Cognito public app clients are designed for this). The App Client ID is not a secret; it is safe to ship in frontend code.
+```
+src/
+├── lib/
+│   └── auth.js              ← all Cognito SDK calls live here
+├── context/
+│   └── AuthContext.jsx      ← React context; consumed by all pages via useAuth()
+├── pages/
+│   ├── Login.jsx            ← shown when unauthenticated
+│   └── Account.jsx          ← shows username + log out button
+└── App.jsx                  ← AuthProvider + AuthedRoutes (auth gate)
+```
 
 ---
 
-### Cognito Setup (Manual, One-Time)
+### `lib/auth.js` — Full Implementation Reference
 
-1. **Create a User Pool** in AWS Console
-   - Sign-in: email (as username)
-   - Password policy: relaxed for MVP (min 6 chars, no complexity requirements)
-   - MFA: disabled
-   - Self-registration: **disabled** (admin-only user creation)
+```js
+import {
+  CognitoIdentityProviderClient,
+  InitiateAuthCommand,
+  GlobalSignOutCommand,
+} from '@aws-sdk/client-cognito-identity-provider'
 
-2. **Create an App Client**
-   - Type: Public client (no client secret)
-   - Auth flows: `ALLOW_USER_PASSWORD_AUTH`, `ALLOW_REFRESH_TOKEN_AUTH`
-   - No OAuth / hosted UI needed
+const REGION = import.meta.env.VITE_AWS_REGION
+const CLIENT_ID = import.meta.env.VITE_COGNITO_CLIENT_ID
 
-3. **Create test user via CLI** (not hardcoded in frontend, excluded from git)
+// Cognito public-client operations (InitiateAuth, GlobalSignOut) don't require
+// IAM credentials. However, the AWS SDK v3 still SigV4-signs the request.
+// Cognito ignores the signature for public ops, but the SDK will throw before
+// making the HTTP call if credentials are empty strings. Pass the existing
+// IAM credentials (from DynamoDB setup) so the signer has non-empty values.
+const client = new CognitoIdentityProviderClient({
+  region: REGION,
+  credentials: {
+    accessKeyId: import.meta.env.VITE_AWS_ACCESS_KEY_ID,
+    secretAccessKey: import.meta.env.VITE_AWS_SECRET_ACCESS_KEY,
+  },
+})
+
+const STORAGE_KEYS = {
+  idToken:      'cognito_id_token',
+  accessToken:  'cognito_access_token',
+  refreshToken: 'cognito_refresh_token',
+}
+
+// --- internal helpers ---
+
+function saveTokens({ IdToken, AccessToken, RefreshToken }) {
+  if (IdToken)      localStorage.setItem(STORAGE_KEYS.idToken,      IdToken)
+  if (AccessToken)  localStorage.setItem(STORAGE_KEYS.accessToken,  AccessToken)
+  if (RefreshToken) localStorage.setItem(STORAGE_KEYS.refreshToken, RefreshToken)
+}
+
+export function clearTokens() {
+  localStorage.removeItem(STORAGE_KEYS.idToken)
+  localStorage.removeItem(STORAGE_KEYS.accessToken)
+  localStorage.removeItem(STORAGE_KEYS.refreshToken)
+}
+
+function decodeJwt(token) {
+  // JWT payload is base64url-encoded JSON — no library needed.
+  try {
+    const payload = token.split('.')[1]
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    return JSON.parse(atob(normalized))
+  } catch {
+    return null
+  }
+}
+
+function userFromIdToken(idToken) {
+  const claims = decodeJwt(idToken)
+  if (!claims) return null
+  return {
+    userId:   claims.sub,                                           // stable UUID
+    username: claims.email || claims['cognito:username'] || claims.sub,
+  }
+}
+
+// --- public API ---
+
+// Read cached IdToken from localStorage and decode locally (no network).
+// Returns { userId, username } or null.
+export function getCurrentUser() {
+  const idToken = localStorage.getItem(STORAGE_KEYS.idToken)
+  if (!idToken) return null
+  return userFromIdToken(idToken)
+}
+
+// Authenticate with email + password. Returns { userId, username }.
+// Throws on bad credentials, network failure, or unsupported auth challenge.
+export async function login(username, password) {
+  const response = await client.send(new InitiateAuthCommand({
+    AuthFlow: 'USER_PASSWORD_AUTH',
+    ClientId: CLIENT_ID,
+    AuthParameters: { USERNAME: username, PASSWORD: password },
+  }))
+
+  if (!response.AuthenticationResult) {
+    throw new Error('Authentication challenge not supported')
+  }
+
+  saveTokens(response.AuthenticationResult)
+  const user = userFromIdToken(response.AuthenticationResult.IdToken)
+  if (!user) throw new Error('Failed to decode user from token')
+  return user
+}
+
+// Silently renew IdToken + AccessToken using RefreshToken.
+// Returns updated { userId, username } or null on any failure.
+// Only clears tokens on hard auth errors — NOT on network failures (offline resilience).
+export async function refreshSession() {
+  const refreshToken = localStorage.getItem(STORAGE_KEYS.refreshToken)
+  if (!refreshToken) return null
+
+  try {
+    const response = await client.send(new InitiateAuthCommand({
+      AuthFlow: 'REFRESH_TOKEN_AUTH',
+      ClientId: CLIENT_ID,
+      AuthParameters: { REFRESH_TOKEN: refreshToken },
+    }))
+    // Refresh response never includes a new RefreshToken — reuse existing one.
+    saveTokens({ ...response.AuthenticationResult, RefreshToken: refreshToken })
+    return userFromIdToken(response.AuthenticationResult.IdToken)
+  } catch (err) {
+    const name = err?.name || ''
+    if (name === 'NotAuthorizedException' || name === 'InvalidParameterException') {
+      clearTokens()  // token is revoked/expired — force re-login
+    }
+    // All other errors (network, DNS, timeout) leave tokens intact.
+    return null
+  }
+}
+
+// Invalidate all sessions server-side, then clear local tokens.
+export async function logout() {
+  const accessToken = localStorage.getItem(STORAGE_KEYS.accessToken)
+  if (accessToken) {
+    try {
+      await client.send(new GlobalSignOutCommand({ AccessToken: accessToken }))
+    } catch (_) {} // always clear locally even if server call fails
+  }
+  clearTokens()
+}
+```
+
+---
+
+### `context/AuthContext.jsx` — Full Implementation Reference
+
+```jsx
+import { createContext, useContext, useState, useEffect, useCallback } from 'react'
+import { login as cognitoLogin, logout as cognitoLogout, refreshSession, getCurrentUser } from '../lib/auth'
+
+const AuthContext = createContext(null)
+
+export function AuthProvider({ children }) {
+  const [authState, setAuthState] = useState('loading')  // 'loading' | 'authenticated' | 'unauthenticated'
+  const [user, setUser] = useState(null)                 // { userId, username } | null
+
+  useEffect(() => {
+    let cancelled = false
+
+    async function restore() {
+      // Fast path: render immediately if we have a cached token.
+      const cached = getCurrentUser()
+      if (cached && !cancelled) {
+        setUser(cached)
+        setAuthState('authenticated')
+      }
+
+      // Background refresh: keeps tokens alive and detects revoked sessions.
+      const refreshed = await refreshSession()
+      if (cancelled) return
+
+      if (refreshed) {
+        setUser(refreshed)
+        setAuthState('authenticated')
+      } else if (!cached) {
+        setAuthState('unauthenticated')
+      }
+      // If cached exists but refresh failed: do nothing — offline resilience.
+      // The user stays logged in until the next successful refresh.
+    }
+
+    restore()
+    return () => { cancelled = true }
+  }, [])
+
+  const login = useCallback(async (username, password) => {
+    const user = await cognitoLogin(username, password)
+    setUser(user)
+    setAuthState('authenticated')
+    return user
+  }, [])
+
+  const logout = useCallback(async () => {
+    await cognitoLogout()
+    setUser(null)
+    setAuthState('unauthenticated')
+  }, [])
+
+  return (
+    <AuthContext.Provider value={{ authState, user, login, logout }}>
+      {children}
+    </AuthContext.Provider>
+  )
+}
+
+export function useAuth() {
+  const ctx = useContext(AuthContext)
+  if (!ctx) throw new Error('useAuth must be used within AuthProvider')
+  return ctx
+}
+```
+
+---
+
+### `App.jsx` — Route Gating Pattern
+
+```jsx
+import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { AuthProvider, useAuth } from './context/AuthContext'
+import Login from './pages/Login'
+// ... other page imports
+
+function AuthedRoutes() {
+  const { authState } = useAuth()
+
+  if (authState === 'loading') return <div className="app-loading" />  // blank while restoring
+  if (authState === 'unauthenticated') return <Login />
+
+  return (
+    <Routes>
+      <Route path="/" element={<Landing />} />
+      {/* ... other routes */}
+    </Routes>
+  )
+}
+
+export default function App() {
+  return (
+    <BrowserRouter basename="/your-app">
+      <AuthProvider>
+        <AuthedRoutes />
+      </AuthProvider>
+    </BrowserRouter>
+  )
+}
+```
+
+**Why `AuthedRoutes` is a child component:** `useAuth()` must be called inside the `AuthProvider` tree. Calling it in `App` directly would fail since the provider hasn't mounted yet.
+
+---
+
+### AWS Setup — Step-by-Step
+
+#### Step 1: Create a Cognito User Pool
+
+In AWS Console → Cognito → **Create user pool**:
+
+| Setting | Value |
+|---|---|
+| Sign-in identifier | Email |
+| Password policy | Cognito defaults (or relax: 8 chars, no symbol requirement) |
+| MFA | Disabled |
+| Self-service sign-up | **Disabled** — admin-only user creation |
+| Required attributes | `email` |
+| Email provider | "Send email with Cognito" (fine for personal apps) |
+| User pool name | anything (e.g. `my-app-users`) |
+
+After creation, note the **User Pool ID** (e.g. `us-east-1_AbCdEfGhI`). You'll need it to run the create-user script.
+
+#### Step 2: Create an App Client
+
+Inside the User Pool → **App Integration** → **App clients** → **Create app client**:
+
+| Setting | Value |
+|---|---|
+| App type | **Public client** |
+| App client name | anything (e.g. `my-app-web`) |
+| Client secret | **Don't generate** — browser apps cannot safely store secrets |
+| Authentication flows | ✅ `ALLOW_USER_PASSWORD_AUTH` ✅ `ALLOW_REFRESH_TOKEN_AUTH` |
+| Token expiry — Access/ID tokens | 1 day (maximum allowed) |
+| Token expiry — Refresh token | 3,650 days (10 years) — user never needs to re-login |
+
+After creation, note the **App Client ID** (e.g. `1a2b3c4d5e6fexample`). This goes into your `.env`.
+
+> **Common gotcha:** If you forget to enable `ALLOW_USER_PASSWORD_AUTH`, login will fail with `InvalidParameterException: USER_PASSWORD_AUTH flow not enabled for this client`. It must be explicitly checked — it is off by default.
+
+#### Step 3: Create a User via CLI
+
+The user is created server-side by an admin. Never hardcode credentials in frontend code.
+
+Create `scripts/create-user.sh` (add to `.gitignore`):
 
 ```bash
-# scripts/create-user.sh (gitignored)
+#!/bin/bash
+set -e
+: "${COGNITO_USER_POOL_ID:?Set COGNITO_USER_POOL_ID env var first}"
+
+USERNAME="user@example.com"
+PASSWORD="your-password"
+
+# Step 1: Create the user (suppresses the welcome email)
 aws cognito-idp admin-create-user \
-  --user-pool-id $COGNITO_USER_POOL_ID \
-  --username barryayang@gmail.com \
-  --temporary-password "drybones" \
+  --user-pool-id "$COGNITO_USER_POOL_ID" \
+  --username "$USERNAME" \
+  --user-attributes Name=email,Value="$USERNAME" Name=email_verified,Value=true \
   --message-action SUPPRESS
 
+# Step 2: Set a permanent password — skips Cognito's forced-change-on-first-login flow
 aws cognito-idp admin-set-user-password \
-  --user-pool-id $COGNITO_USER_POOL_ID \
-  --username barryayang@gmail.com \
-  --password "drybones" \
+  --user-pool-id "$COGNITO_USER_POOL_ID" \
+  --username "$USERNAME" \
+  --password "$PASSWORD" \
   --permanent
 ```
 
-The `admin-set-user-password --permanent` step is required to bypass Cognito's forced-password-change flow on first login.
+Run it:
+```bash
+chmod +x scripts/create-user.sh
+export COGNITO_USER_POOL_ID=us-east-1_AbCdEfGhI
+./scripts/create-user.sh
+```
 
-4. **Add env vars to `.env`** (not committed — add to `.gitignore`):
+> **Why two commands?** `admin-create-user` alone leaves the user in `FORCE_CHANGE_PASSWORD` status — they'd be required to change their password on first login, which the app doesn't implement. `admin-set-user-password --permanent` sets the status to `CONFIRMED` and bypasses that challenge entirely.
+
+Verify in the AWS Console → Cognito → User Pool → **Users** — status should be `CONFIRMED`.
+
+#### Step 4: IAM Policy
+
+The IAM user whose credentials are used in the frontend (for DynamoDB access) needs these permissions on the table:
+
+```json
+{
+  "Effect": "Allow",
+  "Action": [
+    "dynamodb:PutItem",
+    "dynamodb:Query"
+  ],
+  "Resource": "arn:aws:dynamodb:us-east-1:*:table/your-table-name"
+}
+```
+
+`Query` replaces `Scan` now that data is partitioned by `userId`.
+
+#### Step 5: Environment Variables
+
+**`frontend/.env`** (gitignored — never commit):
 ```
 VITE_AWS_REGION=us-east-1
-VITE_AWS_ACCESS_KEY_ID=...
-VITE_AWS_SECRET_ACCESS_KEY=...
-VITE_COGNITO_CLIENT_ID=...
+VITE_AWS_ACCESS_KEY_ID=AKIAxxxxxxxxxxxxxxxx
+VITE_AWS_SECRET_ACCESS_KEY=xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+VITE_COGNITO_CLIENT_ID=1a2b3c4d5e6fexample
 ```
 
-5. **Add the same vars as GitHub Secrets** (Settings → Secrets → Actions) so the GitHub Actions build bakes them in:
+> The **User Pool ID** is only needed when running `create-user.sh` — it is not needed in the frontend. The App Client ID is sufficient; it is scoped to its pool.
+
+**GitHub Secrets** (Settings → Secrets and variables → Actions) — same four vars:
 - `VITE_AWS_REGION`
 - `VITE_AWS_ACCESS_KEY_ID`
 - `VITE_AWS_SECRET_ACCESS_KEY`
 - `VITE_COGNITO_CLIENT_ID`
 
-The User Pool ID is not needed client-side — the App Client ID is scoped to its pool.
+**`.github/workflows/deploy.yml`** — pass secrets to the build step:
+```yaml
+- run: npm run build
+  working-directory: frontend
+  env:
+    VITE_AWS_REGION: ${{ secrets.VITE_AWS_REGION }}
+    VITE_AWS_ACCESS_KEY_ID: ${{ secrets.VITE_AWS_ACCESS_KEY_ID }}
+    VITE_AWS_SECRET_ACCESS_KEY: ${{ secrets.VITE_AWS_SECRET_ACCESS_KEY }}
+    VITE_COGNITO_CLIENT_ID: ${{ secrets.VITE_COGNITO_CLIENT_ID }}
+```
+
+Vite bakes `import.meta.env.VITE_*` vars into the JS bundle at build time. If the secrets aren't set, the vars will be `undefined` and auth will fail silently (or with a cryptic "region is missing" error from the SDK).
 
 ---
 
-### Session Management
+### Token Storage
 
-| Token | Storage | Expiry | Purpose |
+| Key | Value | Expiry | Notes |
 |---|---|---|---|
-| `IdToken` (JWT) | localStorage | 1 day | Contains user claims (`sub` = userId, `email`). Source of user identity. |
-| `AccessToken` (JWT) | localStorage | 1 day | Used for Cognito API calls (e.g. GlobalSignOut) |
-| `RefreshToken` (opaque) | localStorage | 3,650 days (10 years) | Renews IdToken + AccessToken on app load |
+| `cognito_id_token` | JWT | 1 day | Contains `sub` (userId) and `email` claims. Decoded locally — no network call needed. |
+| `cognito_access_token` | JWT | 1 day | Required for `GlobalSignOut`. Not decoded. |
+| `cognito_refresh_token` | Opaque string | 10 years | Used to renew id/access tokens. Never decoded. |
 
-**On app mount:** if a cached IdToken exists, the app renders immediately (no flicker to login). A background refresh updates the tokens. If refresh fails due to a network error (e.g. offline), the user stays logged in with the cached token — they'll refresh next time they're online. If refresh fails due to an auth error (expired/revoked), tokens are cleared and login is shown.
+All three are stored in `localStorage` (persists across tab close and browser restart). On logout, all three are removed.
 
-**Effective session length:** 10 years (driven by RefreshToken expiry). The user should never need to re-login on a personal device under normal circumstances.
-
-**Token renewal is not proactive** — only on app load. IdToken lasts 1 day, sessions are ≤60 min, so no mid-session renewal is needed.
+The `REFRESH_TOKEN_AUTH` flow never returns a new `RefreshToken` — the existing one must be reused. This is a Cognito design choice; the refresh token's expiry clock resets on each use.
 
 ---
 
-### Data Model Changes
+### DynamoDB Key Design for Per-User Data
 
-The DynamoDB table (`meditation-sessions-db`) needs to be re-keyed to scope data per user.
+With auth, data must be scoped per user. The table key schema changes:
 
-**Current schema:**
-| Key | Type | Notes |
+| | Before auth | After auth |
 |---|---|---|
-| `date` (PK) | String | YYYY-MM-DD |
-| `completedAt` (SK) | String | ISO timestamp |
+| PK | `date` (YYYY-MM-DD) | `userId` (`USER#<cognito-sub>`) |
+| SK | `completedAt` (ISO timestamp) | `completedAt` (ISO timestamp) |
+| `date` | PK | Regular attribute |
 
-**Updated schema:**
-| Key | Type | Notes |
-|---|---|---|
-| `userId` (PK) | String | `USER#<cognito-sub>` |
-| `completedAt` (SK) | String | ISO timestamp |
-| `date` | String | YYYY-MM-DD (regular attribute, for display/filtering) |
-| `durationMinutes` | Number | |
+**Why `USER#` prefix?** A namespacing convention that makes the key type explicit in the raw table. Useful if you later add other entity types (e.g. `CONFIG#<userId>`) to the same table.
 
-**Why move `date` out of the PK:**
-With multi-user support, the natural partition key becomes `userId`. Keeping `date` as PK would mix users' data. `completedAt` as SK still provides ordering and uniqueness within a user.
+**Why `sub` not email?** The `sub` claim is a UUID assigned at user creation and never changes, even if the email is updated. Using email as a key would make email changes a data migration.
 
-**Query pattern:**
-- Fetch all sessions for a user: `Query` where PK = `USER#<sub>` (replaces current `Scan`)
-- This is efficient and cheap — no full table scan needed once users are scoped properly
+**`lib/sessions.js` pattern:**
+```js
+// Write
+await docClient.send(new PutCommand({
+  TableName: TABLE,
+  Item: { userId: `USER#${userId}`, completedAt, date, durationMinutes },
+}))
 
-**Migration note:** Existing test records (date-keyed) will be orphaned and can be deleted. Since the table only has dev data, a table wipe is acceptable.
+// Read
+await docClient.send(new QueryCommand({
+  TableName: TABLE,
+  KeyConditionExpression: '#pk = :pk',
+  ExpressionAttributeNames: { '#pk': 'userId' },
+  ExpressionAttributeValues: { ':pk': `USER#${userId}` },
+}))
+```
 
 ---
 
-### Security Tradeoffs (Explicit)
+### Session Persistence and Offline Behavior
+
+| Scenario | Result |
+|---|---|
+| App opened, online, valid refresh token | Silent refresh → stay logged in, tokens updated |
+| App opened, offline, cached IdToken present | Instant render from cache → stay logged in, no network call needed |
+| App opened, offline, no cached token | Stuck at login — cannot authenticate without network |
+| App opened, refresh token revoked/expired | Tokens cleared → login screen shown |
+| Session timer running, app backgrounded on iOS | Timer continues via AudioContext; tokens unaffected |
+| User explicitly logs out | `GlobalSignOut` → all tokens invalidated server-side + cleared locally |
+
+**Effective logged-in duration:** 10 years (RefreshToken expiry). On a personal device where the app is opened regularly, the user will never see the login screen again after the first login.
+
+---
+
+### Security Notes
 
 | Concern | Decision | Rationale |
 |---|---|---|
-| Client secret in frontend | None needed | Cognito public app clients have no client secret by design |
-| App Client ID in frontend | ✅ Safe to expose | Not a credential — only enables auth against a specific user pool |
-| User Pool ID in frontend | ✅ Safe to expose | Same reasoning — publicly known by design |
-| localStorage for tokens | ✅ Acceptable for MVP | XSS risk is theoretical for a personal app; sessionStorage would be slightly safer but loses persistence on tab close |
-| IAM credentials in frontend | ⚠️ Unchanged concern | Pre-existing tradeoff from DynamoDB setup — acceptable for personal app |
-| GlobalSignOut on logout | ✅ Done | Invalidates refresh tokens server-side, not just client-side |
-| No PKCE / OAuth flow | ✅ Acceptable | USER_PASSWORD_AUTH is sufficient for a non-public app with known users |
+| App Client secret | Not used | Cognito public clients have no secret by design — safe for browser apps |
+| App Client ID in bundle | ✅ Safe | It's a public identifier, not a credential |
+| IAM credentials in bundle | ⚠️ Known tradeoff | Scoped to `PutItem`/`Query` on one table — acceptable for a personal app with no sensitive data |
+| Token storage | localStorage | Persists across sessions. sessionStorage would be safer against XSS but loses session on tab close — unacceptable UX for a mobile PWA |
+| No PKCE / OAuth flow | ✅ Acceptable | `USER_PASSWORD_AUTH` is appropriate for a closed app with pre-created users. PKCE is for public OAuth flows. |
+| `GlobalSignOut` on logout | ✅ Done | Invalidates all refresh tokens across all devices server-side |
 
 ---
 
-### Edge Cases
+### Troubleshooting
 
-| Scenario | Behavior |
-|---|---|
-| Refresh token expired (>10 years inactive) | `refreshSession()` returns `NotAuthorizedException` → clear tokens → redirect to login |
-| User refreshes page mid-session (timer running) | Timer resets (pre-existing behavior). Auth state is restored from localStorage before app renders — no login prompt. |
-| Failed login attempt | Show error message. No lockout handling in UI (Cognito has built-in rate limiting server-side). |
-| Network failure during login | Catch error → show "connection error, try again" |
-| App opened offline with cached tokens | User stays logged in (tokens preserved). History page shows error loading data. Timer works fully offline. |
-| App opened offline with no tokens | Stuck on login screen — can't authenticate without network. |
-| Network failure during DynamoDB write | Pre-existing behavior: log warning, don't surface to user |
-| User logs out on one device | RefreshToken invalidated globally. Other devices will fail to refresh on next app load and redirect to login. |
-| Cognito service outage | Login blocked. If already authenticated and token still valid (<1hr), app continues to function. After expiry, redirect to login. |
-
----
-
-### Assumptions
-
-1. No sign-up flow — users are pre-created by admin via CLI script.
-2. No password reset UI — can be done via AWS Console or CLI if needed.
-3. No MFA — out of scope.
-4. Single Cognito User Pool shared for all environments (MVP simplification). A prod/dev split would be the next step.
-5. The Cognito `sub` claim (a UUID) is used as the canonical userId — not the email. This decouples identity from contact info.
-6. The existing IAM user (`workout-tracker-app`) will be granted `dynamodb:Query` on the updated table (replacing `dynamodb:Scan`).
-
----
-
-### Implementation Status ✅
-
-All auth features are implemented and deployed:
-
-1. ✅ **AWS Setup** — User Pool + App Client created; `ALLOW_USER_PASSWORD_AUTH` enabled on App Client; user created via `create-user.sh`; env vars added to `.env` and GitHub Secrets
-2. ✅ **`lib/auth.js`** — Cognito SDK wrapper: `login()`, `logout()`, `refreshSession()`, `getCurrentUser()`, `clearTokens()`
-3. ✅ **`context/AuthContext.jsx`** — `authState` ('loading' | 'authenticated' | 'unauthenticated'), `user` (`{ userId, username }`), `login`, `logout`; session restore with offline resilience
-4. ✅ **`pages/Login.jsx`** + **`styles/Login.css`** — Email + password form; error handling for bad credentials and network failures
-5. ✅ **`App.jsx`** — `AuthProvider` wraps all routes; `AuthedRoutes` gates on `authState`
-6. ✅ **`lib/sessions.js`** — `USER#<userId>` PK; `QueryCommand` replaces `ScanCommand`
-7. ✅ **DynamoDB** — Table recreated with `userId` (PK) + `completedAt` (SK)
-8. ✅ **`pages/Account.jsx`** + **`styles/Account.css`** — Username display + log out button
-9. ✅ **`Landing.jsx`** — "account" link added
+| Error | Cause | Fix |
+|---|---|---|
+| `InvalidParameterException: USER_PASSWORD_AUTH flow not enabled` | App Client doesn't have the flow enabled | AWS Console → Cognito → User Pool → App clients → Edit → check `ALLOW_USER_PASSWORD_AUTH` |
+| `region is missing` | `VITE_AWS_REGION` env var not set at build time | Add to GitHub Secrets and redeploy; restart dev server locally |
+| `undefined: undefined` on login error | SDK threw before making HTTP call (empty credentials) | Ensure `VITE_AWS_ACCESS_KEY_ID` and `VITE_AWS_SECRET_ACCESS_KEY` are set |
+| User status is `FORCE_CHANGE_PASSWORD` | `admin-create-user` run but `admin-set-user-password` not run | Run the second command in `create-user.sh` |
+| Login succeeds locally but fails in prod | Env vars not in GitHub Secrets / not passed to build step | Check `deploy.yml` `env:` block; verify secrets are set in repo settings |
