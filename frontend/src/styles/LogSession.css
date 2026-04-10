@@ -21,6 +21,7 @@
   gap: 0.5rem;
   width: 100%;
   max-width: 300px;
+  padding-bottom: 6rem;
 }
 
 .log-session-label {
@@ -125,7 +126,7 @@
 
 .log-session-save {
   font-family: inherit;
-  padding: 0.9rem;
+  padding: 0.9rem 3rem;
   border-radius: 2rem;
   border: none;
   background: var(--accent);
@@ -134,9 +135,12 @@
   font-weight: 500;
   letter-spacing: 0.05em;
   cursor: pointer;
-  width: 100%;
-  margin-top: 1.5rem;
+  position: fixed;
+  bottom: 2.5rem;
+  left: 50%;
+  transform: translateX(-50%);
   transition: background 0.2s, opacity 0.2s;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.12);
 }
 
 .log-session-save:active {
