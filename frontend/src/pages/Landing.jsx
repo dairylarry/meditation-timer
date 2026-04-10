@@ -21,20 +21,28 @@ export default function Landing() {
   useEffect(() => {
     if (!user?.userId) return
 
-    // Manually construct YYYY-MM-DD in local time
     const now = new Date()
     const yyyy = now.getFullYear()
     const mm = String(now.getMonth() + 1).padStart(2, '0')
     const dd = String(now.getDate()).padStart(2, '0')
     const today = `${yyyy}-${mm}-${dd}`
 
+    console.log("Checking for sessions matching:", today)
+
     fetchSessions({ userId: user.userId })
       .then(sessions => {
-        // We use .startsWith(today) in case the session date is a full ISO string
-        // or a simple comparison if it's already just a date string.
-        const found = sessions.some(s => 
-          s.date && (s.date === today || s.date.startsWith(today))
-        )
+        console.log("Total sessions fetched:", sessions.length)
+        
+        const found = sessions.some(s => {
+          // Log each session to see what the data actually looks like
+          console.log(`Checking session: ID=${s.id || 'N/A'}, Date Value="${s.date}"`)
+          
+          const isMatch = s.date && (s.date === today || s.date.startsWith(today))
+          
+          if (isMatch) console.log("✅ Match found!")
+          return isMatch
+        })
+
         setHasTodaySession(found)
       })
       .catch((err) => {
