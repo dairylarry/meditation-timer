@@ -1,13 +1,13 @@
 /* app color scheme */
 :root {
-  --bg:           #eaeef7;
+  --bg:           #d8e6de;
   --surface:      #ffffff;
-  --surface-alt:  #eef1f7;
-  --border:       #bfc9d9;
-  --text:         #2c3650;
-  --text-muted:   #6b7f8f;
-  --text-dim:     #b0bbc4;
-  --accent:       #3d4f6b;
-  --accent-hover: #4e6280;
+  --surface-alt:  #eef4f0;
+  --border:       #c2d4c9;
+  --text:         #2c3e50;
+  --text-muted:   #6b8f7b;
+  --text-dim:     #b0c4b8;
+  --accent:       #3d5a4c;
+  --accent-hover: #4e7360;
   --error:        #c0392b;
 }
