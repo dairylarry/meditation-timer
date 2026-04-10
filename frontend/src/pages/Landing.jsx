@@ -65,23 +65,17 @@ export default function Landing() {
         </span>
       </label>
 
-      <div className="landing-start-row">
-        <button
-          className="btn-start"
-          onClick={() => navigate('/session', { state: { duration, showCountdown } })}
-        >
-          start
-        </button>
-        <button
-          className="btn-log"
-          onClick={() => navigate('/log')}
-          title="log a session manually"
-        >
-          +
-        </button>
-      </div>
+      <button
+        className="btn-start"
+        onClick={() => navigate('/session', { state: { duration, showCountdown } })}
+      >
+        start
+      </button>
 
       <div className="landing-links">
+        <button className="btn-history" onClick={() => navigate('/log')}>
+          + log session
+        </button>
         {hasTodaySession && (
           <button className="btn-history" onClick={() => navigate('/reflect')}>
             reflect

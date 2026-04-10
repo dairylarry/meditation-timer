@@ -12,27 +12,22 @@
   font-weight: 500;
   letter-spacing: 0.15em;
   color: var(--accent);
-  margin-top: 0.5rem;
 }
 
 .log-session-form {
   display: flex;
   flex-direction: column;
-  gap: 2rem;
+  align-items: center;
+  gap: 0.5rem;
   width: 100%;
-  max-width: 320px;
-}
-
-.log-session-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0.6rem;
+  max-width: 300px;
 }
 
 .log-session-label {
   font-size: 0.85rem;
   color: var(--text-muted);
   letter-spacing: 0.1em;
+  margin-top: 1.5rem;
 }
 
 .log-session-optional {
@@ -42,25 +37,59 @@
 
 .log-session-time {
   font-family: inherit;
-  font-size: 2rem;
-  font-weight: 300;
+  font-size: 2.5rem;
+  font-weight: 200;
   color: var(--text);
   background: transparent;
   border: none;
-  border-bottom: 1.5px solid var(--border);
   outline: none;
+  text-align: center;
   padding: 0.25rem 0;
-  width: 100%;
-}
-
-.log-session-time:focus {
-  border-bottom-color: var(--accent);
 }
 
 .log-session-duration {
   display: flex;
   align-items: center;
-  gap: 1.5rem;
+  gap: 1rem;
+}
+
+.log-picker-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  border: 1.5px solid var(--border);
+  font-size: 1.2rem;
+  color: var(--accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--surface);
+  transition: background 0.2s;
+}
+
+.log-picker-btn:active {
+  background: var(--surface-alt);
+}
+
+.log-duration-display {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 60px;
+}
+
+.log-duration-value {
+  font-size: 2.5rem;
+  font-weight: 200;
+  line-height: 1;
+  color: var(--text);
+}
+
+.log-duration-unit {
+  font-size: 0.8rem;
+  color: var(--text-muted);
+  margin-top: 0.2rem;
+  letter-spacing: 0.1em;
 }
 
 .log-session-textarea {
@@ -73,6 +102,7 @@
   background: var(--surface);
   resize: none;
   outline: none;
+  width: 100%;
   transition: border-color 0.2s;
 }
 
@@ -97,6 +127,8 @@
   font-weight: 500;
   letter-spacing: 0.05em;
   cursor: pointer;
+  width: 100%;
+  margin-top: 0.5rem;
   transition: background 0.2s, opacity 0.2s;
 }
 

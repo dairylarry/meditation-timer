@@ -24,7 +24,6 @@ export default function LogSession() {
     setError('')
     try {
       const date = meditationDate()
-      // Build completedAt from today's meditation date + chosen time
       const [y, m, d] = date.split('-').map(Number)
       const [h, min] = time.split(':').map(Number)
       const completedAt = new Date(y, m - 1, d, h, min, 0).toISOString()
@@ -49,44 +48,38 @@ export default function LogSession() {
       <h1 className="log-session-title">log session</h1>
 
       <div className="log-session-form">
-        <div className="log-session-field">
-          <label className="log-session-label">time</label>
-          <input
-            className="log-session-time"
-            type="time"
-            value={time}
-            onChange={e => setTime(e.target.value)}
-          />
-        </div>
+        <label className="log-session-label">time</label>
+        <input
+          className="log-session-time"
+          type="time"
+          value={time}
+          onChange={e => setTime(e.target.value)}
+        />
 
-        <div className="log-session-field">
-          <label className="log-session-label">duration</label>
-          <div className="log-session-duration">
-            <button
-              className="picker-btn"
-              onClick={() => setDuration(d => Math.max(1, d - 1))}
-            >−</button>
-            <div className="duration-display">
-              <span className="duration-value">{duration}</span>
-              <span className="duration-unit">min</span>
-            </div>
-            <button
-              className="picker-btn"
-              onClick={() => setDuration(d => d + 1)}
-            >+</button>
+        <label className="log-session-label">duration</label>
+        <div className="log-session-duration">
+          <button
+            className="log-picker-btn"
+            onClick={() => setDuration(d => Math.max(1, d - 1))}
+          >−</button>
+          <div className="log-duration-display">
+            <span className="log-duration-value">{duration}</span>
+            <span className="log-duration-unit">min</span>
           </div>
+          <button
+            className="log-picker-btn"
+            onClick={() => setDuration(d => d + 1)}
+          >+</button>
         </div>
 
-        <div className="log-session-field">
-          <label className="log-session-label">note <span className="log-session-optional">(optional)</span></label>
-          <textarea
-            className="log-session-textarea"
-            placeholder="how was your session?"
-            value={note}
-            onChange={e => setNote(e.target.value)}
-            rows={4}
-          />
-        </div>
+        <label className="log-session-label">note <span className="log-session-optional">(optional)</span></label>
+        <textarea
+          className="log-session-textarea"
+          placeholder="how was your session?"
+          value={note}
+          onChange={e => setNote(e.target.value)}
+          rows={4}
+        />
 
         {error && <div className="log-session-error">{error}</div>}
 
