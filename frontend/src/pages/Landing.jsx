@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchSessions } from '../lib/sessions'
 import { useAuth } from '../context/AuthContext'
+import { meditationDate } from '../lib/dateUtils'
 import '../styles/Landing.css'
 
 export default function Landing() {
@@ -20,34 +21,10 @@ export default function Landing() {
 
   useEffect(() => {
     if (!user?.userId) return
-
-    const now = new Date()
-    const yyyy = now.getFullYear()
-    const mm = String(now.getMonth() + 1).padStart(2, '0')
-    const dd = String(now.getDate()).padStart(2, '0')
-    const today = `${yyyy}-${mm}-${dd}`
-
-    console.log("Checking for sessions matching:", today)
-
+    const today = meditationDate()
     fetchSessions({ userId: user.userId })
-      .then(sessions => {
-        console.log("Total sessions fetched:", sessions.length)
-        
-        const found = sessions.some(s => {
-          // Log each session to see what the data actually looks like
-          console.log(`Checking session: ID=${s.id || 'N/A'}, Date Value="${s.date}"`)
-          
-          const isMatch = s.date && (s.date === today || s.date.startsWith(today))
-          
-          if (isMatch) console.log("✅ Match found!")
-          return isMatch
-        })
-
-        setHasTodaySession(found)
-      })
-      .catch((err) => {
-        console.error("Failed to fetch sessions:", err)
-      })
+      .then(sessions => setHasTodaySession(sessions.some(s => s.date === today)))
+      .catch(() => {})
   }, [user?.userId])
 
   useEffect(() => {

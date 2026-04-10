@@ -11,18 +11,18 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #5a8a6c;
+  color: var(--accent);
   margin-top: 0.5rem;
 }
 
 .reflect-status {
-  color: #7aa090;
+  color: var(--text-muted);
   font-size: 0.9rem;
   margin-top: 2rem;
 }
 
 .reflect-error {
-  color: #e06050;
+  color: var(--error);
 }
 
 .reflect-picker {
@@ -35,7 +35,7 @@
 
 .reflect-picker-label {
   font-size: 0.85rem;
-  color: #7aa090;
+  color: var(--text-muted);
   letter-spacing: 0.1em;
   text-align: center;
   margin-bottom: 0.25rem;
@@ -48,16 +48,16 @@
   gap: 1rem;
   padding: 1rem 1.25rem;
   border-radius: 12px;
-  border: 1.5px solid #364d3e;
-  background: #263328;
-  color: #ccd8d0;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--text);
   font-size: 1rem;
   cursor: pointer;
   transition: background 0.15s;
 }
 
 .reflect-picker-card:active {
-  background: #2f3d35;
+  background: var(--surface-alt);
 }
 
 .reflect-picker-time {
@@ -65,7 +65,7 @@
 }
 
 .reflect-picker-duration {
-  color: #7aa090;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
@@ -73,7 +73,7 @@
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background: #5a8a6c;
+  background: var(--accent);
   margin-left: auto;
 }
 
@@ -90,30 +90,30 @@
   justify-content: center;
   gap: 0.5rem;
   font-size: 0.9rem;
-  color: #7aa090;
+  color: var(--text-muted);
   letter-spacing: 0.05em;
 }
 
 .reflect-textarea {
   font-family: inherit;
   font-size: 1rem;
-  color: #ccd8d0;
+  color: var(--text);
   padding: 0.9rem;
   border-radius: 12px;
-  border: 1.5px solid #364d3e;
-  background: #263328;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   resize: none;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .reflect-textarea:focus {
-  border-color: #5a8a6c;
+  border-color: var(--accent);
 }
 
 .reflect-saved {
   font-size: 0.85rem;
-  color: #7aa090;
+  color: var(--text-muted);
   text-align: center;
   letter-spacing: 0.05em;
 }
@@ -123,8 +123,8 @@
   padding: 0.9rem;
   border-radius: 2rem;
   border: none;
-  background: #5a8a6c;
-  color: #1e2b23;
+  background: var(--accent);
+  color: var(--bg);
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -133,7 +133,7 @@
 }
 
 .reflect-save:active {
-  background: #6a9e7c;
+  background: var(--accent-hover);
 }
 
 .reflect-save:disabled {

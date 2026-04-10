@@ -16,7 +16,7 @@
 .session-time {
   font-size: 3rem;
   font-weight: 300;
-  color: #ccd8d0;
+  color: var(--text);
   margin-top: -200px;
   position: relative;
   z-index: 1;
@@ -33,21 +33,21 @@
 .session-countdown-value {
   font-size: 5rem;
   font-weight: 200;
-  color: #ccd8d0;
+  color: var(--text);
   line-height: 1;
 }
 
 .session-countdown-label {
   font-size: 1rem;
   font-weight: 400;
-  color: #7aa090;
+  color: var(--text-muted);
   margin-top: 0.75rem;
   letter-spacing: 0.1em;
 }
 
 .session-finish {
   font-size: 0.8rem;
-  color: #4e6a5c;
+  color: var(--text-dim);
   margin-top: 1rem;
   position: relative;
   z-index: 1;
@@ -67,13 +67,13 @@
 .session-done-text {
   font-size: 2rem;
   font-weight: 400;
-  color: #ccd8d0;
+  color: var(--text);
   letter-spacing: 0.1em;
 }
 
 .session-note-link {
   font-size: 0.9rem;
-  color: #7aa090;
+  color: var(--text-muted);
   padding: 0.5rem 1rem;
   background: transparent;
   border: none;
@@ -81,7 +81,7 @@
 }
 
 .session-note-link:active {
-  color: #5a8a6c;
+  color: var(--accent);
 }
 
 .session-note-editor {
@@ -96,23 +96,23 @@
 .session-note-textarea {
   font-family: inherit;
   font-size: 1rem;
-  color: #ccd8d0;
+  color: var(--text);
   padding: 0.9rem;
   border-radius: 12px;
-  border: 1.5px solid #364d3e;
-  background: #263328;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
   resize: none;
   outline: none;
   transition: border-color 0.2s;
 }
 
 .session-note-textarea:focus {
-  border-color: #5a8a6c;
+  border-color: var(--accent);
 }
 
 .session-note-error {
   font-size: 0.8rem;
-  color: #e06050;
+  color: var(--error);
   text-align: center;
 }
 
@@ -121,8 +121,8 @@
   padding: 0.8rem;
   border-radius: 2rem;
   border: none;
-  background: #5a8a6c;
-  color: #1e2b23;
+  background: var(--accent);
+  color: var(--bg);
   font-size: 0.95rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -131,7 +131,7 @@
 }
 
 .session-note-save:active {
-  background: #6a9e7c;
+  background: var(--accent-hover);
 }
 
 .session-note-save:disabled {
@@ -141,6 +141,6 @@
 
 .session-note-saved {
   font-size: 0.9rem;
-  color: #7aa090;
+  color: var(--text-muted);
   letter-spacing: 0.05em;
 }

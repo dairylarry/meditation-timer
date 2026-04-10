@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom'
 import ProgressRing from '../components/ProgressRing'
 import { getOrCreateContext, startKeepalive, stopKeepalive, loadGong, playBuffer, closeContext } from '../lib/audio'
 import { recordSession, updateSessionNote } from '../lib/sessions'
+import { meditationDate } from '../lib/dateUtils'
 import { useAuth } from '../context/AuthContext'
 import '../styles/Session.css'
 
@@ -47,7 +48,7 @@ export default function Session() {
     try {
       await recordSession({
         userId: user?.userId,
-        date: nowIso.split('T')[0],
+        date: meditationDate(),
         completedAt: nowIso,
         durationMinutes: duration,
       })

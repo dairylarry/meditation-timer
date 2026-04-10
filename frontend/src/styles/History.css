@@ -10,7 +10,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #5a8a6c;
+  color: var(--accent);
   margin-bottom: 1.5rem;
 }
 
@@ -24,11 +24,11 @@
 .history-arrow {
   font-size: 1.2rem;
   padding: 0.5rem 0.75rem;
-  color: #7aa090;
+  color: var(--text-muted);
 }
 
 .history-arrow:active {
-  color: #5a8a6c;
+  color: var(--accent);
 }
 
 .history-arrow-hidden {
@@ -37,19 +37,19 @@
 
 .history-month-label {
   font-size: 1rem;
-  color: #ccd8d0;
+  color: var(--text);
   min-width: 140px;
   text-align: center;
   font-weight: 500;
 }
 
 .history-status {
-  color: #7aa090;
+  color: var(--text-muted);
   font-size: 0.9rem;
 }
 
 .history-error {
-  color: #e06050;
+  color: var(--error);
 }
 
 .history-months {
@@ -65,8 +65,8 @@
   max-width: 360px;
   margin-top: 1.5rem;
   padding: 1.25rem;
-  background: #263328;
-  border: 1px solid #364d3e;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   display: flex;
   flex-direction: column;
@@ -75,12 +75,12 @@
 
 .history-detail-date {
   font-size: 0.85rem;
-  color: #7aa090;
+  color: var(--text-muted);
   letter-spacing: 0.05em;
   text-transform: lowercase;
   text-align: center;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #2f3d35;
+  border-bottom: 1px solid var(--border);
 }
 
 .history-detail-session {
@@ -90,7 +90,7 @@
 }
 
 .history-detail-session + .history-detail-session {
-  border-top: 1px solid #2f3d35;
+  border-top: 1px solid var(--border);
   padding-top: 1rem;
 }
 
@@ -98,7 +98,7 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.95rem;
-  color: #ccd8d0;
+  color: var(--text);
 }
 
 .history-detail-time {
@@ -106,15 +106,15 @@
 }
 
 .history-detail-duration {
-  color: #7aa090;
+  color: var(--text-muted);
 }
 
 .history-detail-note {
   font-size: 0.9rem;
-  color: #ccd8d0;
+  color: var(--text);
   line-height: 1.5;
   white-space: pre-wrap;
-  background: #2a3829;
+  background: var(--surface-alt);
   padding: 0.75rem;
   border-radius: 8px;
 }

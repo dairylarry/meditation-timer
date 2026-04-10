@@ -1,9 +1,9 @@
 .month-grid-container {
   width: 100%;
-  background: #263328;
+  background: var(--surface);
   border-radius: 16px;
   padding: 1rem;
-  border: 1px solid #364d3e;
+  border: 1px solid var(--border);
 }
 
 .month-day-labels,
@@ -16,7 +16,7 @@
 .month-day-label {
   text-align: center;
   font-size: 0.7rem;
-  color: #4e6a5c;
+  color: var(--text-dim);
   padding-bottom: 4px;
 }
 
@@ -34,25 +34,25 @@
 }
 
 .month-cell-missed {
-  background: #2a3829;
-  color: #4e6a5c;
+  background: var(--surface-alt);
+  color: var(--text-dim);
 }
 
 .month-cell-completed {
-  background: #4a7a5e;
-  color: #ccd8d0;
+  background: var(--accent);
+  color: var(--bg);
   cursor: pointer;
 }
 
 .month-cell-selected {
-  outline: 2px solid #6eb88a;
+  outline: 2px solid var(--accent-hover);
   outline-offset: -2px;
 }
 
 .month-detail {
   margin-top: 0.75rem;
   padding: 0.75rem;
-  background: #2a3829;
+  background: var(--surface-alt);
   border-radius: 10px;
 }
 
@@ -60,10 +60,10 @@
   display: flex;
   justify-content: space-between;
   font-size: 0.85rem;
-  color: #ccd8d0;
+  color: var(--text);
   padding: 0.25rem 0;
 }
 
 .month-detail-row + .month-detail-row {
-  border-top: 1px solid #364d3e;
+  border-top: 1px solid var(--border);
 }

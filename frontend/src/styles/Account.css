@@ -11,7 +11,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #5a8a6c;
+  color: var(--accent);
   margin-top: 1rem;
 }
 
@@ -24,13 +24,13 @@
 
 .account-label {
   font-size: 0.85rem;
-  color: #7aa090;
+  color: var(--text-muted);
   letter-spacing: 0.1em;
 }
 
 .account-username {
   font-size: 1.15rem;
-  color: #ccd8d0;
+  color: var(--text);
   font-weight: 500;
 }
 
@@ -38,9 +38,9 @@
   font-family: inherit;
   padding: 0.9rem 2.5rem;
   border-radius: 2rem;
-  border: 1.5px solid #364d3e;
-  background: #263328;
-  color: #5a8a6c;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  color: var(--accent);
   font-size: 1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -49,5 +49,5 @@
 }
 
 .account-logout:active {
-  background: #2f3d35;
+  background: var(--surface-alt);
 }

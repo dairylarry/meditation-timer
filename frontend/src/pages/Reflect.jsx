@@ -2,15 +2,12 @@ import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { fetchSessions, updateSessionNote } from '../lib/sessions'
 import { useAuth } from '../context/AuthContext'
+import { meditationDate } from '../lib/dateUtils'
 import '../styles/Reflect.css'
 
 function formatTime(isoString) {
   const d = new Date(isoString)
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-}
-
-function todayDateString() {
-  return new Date().toISOString().split('T')[0]
 }
 
 export default function Reflect() {
@@ -27,7 +24,7 @@ export default function Reflect() {
 
   useEffect(() => {
     if (!user?.userId) return
-    const today = todayDateString()
+    const today = meditationDate()
     fetchSessions({ userId: user.userId })
       .then(sessions => {
         const mine = sessions

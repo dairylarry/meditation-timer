@@ -7,7 +7,6 @@ const CIRCUMFERENCE = 2 * Math.PI * RADIUS
 
 export default function ProgressRing({ progress }) {
   const offset = CIRCUMFERENCE * (1 - progress)
-  const strokeColor = progress >= 0.5 ? '#4a7a5e' : '#6a9e7c'
 
   return (
     <svg className="progress-ring" width={SIZE} height={SIZE} viewBox={`0 0 ${SIZE} ${SIZE}`}>
@@ -26,7 +25,6 @@ export default function ProgressRing({ progress }) {
         strokeWidth={STROKE}
         strokeDasharray={CIRCUMFERENCE}
         strokeDashoffset={offset}
-        stroke={strokeColor}
       />
     </svg>
   )

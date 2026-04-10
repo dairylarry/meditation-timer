@@ -10,12 +10,12 @@
   font-size: 1.4rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #5a8a6c;
+  color: var(--accent);
 }
 
 .brahma-subtitle {
   font-size: 0.85rem;
-  color: #7aa090;
+  color: var(--text-muted);
   margin-top: 0.35rem;
   margin-bottom: 2rem;
   letter-spacing: 0.05em;
@@ -30,8 +30,8 @@
 }
 
 .brahma-card {
-  background: #263328;
-  border: 1px solid #364d3e;
+  background: var(--surface);
+  border: 1px solid var(--border);
   border-radius: 16px;
   padding: 1.25rem 1.25rem 1rem;
 }
@@ -39,12 +39,12 @@
 .brahma-card-name {
   font-size: 1.1rem;
   font-weight: 500;
-  color: #ccd8d0;
+  color: var(--text);
 }
 
 .brahma-card-meaning {
   font-size: 0.8rem;
-  color: #7aa090;
+  color: var(--text-muted);
   margin-top: 0.15rem;
   margin-bottom: 0.6rem;
   letter-spacing: 0.03em;
@@ -52,6 +52,6 @@
 
 .brahma-card-desc {
   font-size: 0.85rem;
-  color: #9ab5a4;
+  color: var(--text-muted);
   line-height: 1.5;
 }

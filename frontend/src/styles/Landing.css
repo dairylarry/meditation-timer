@@ -12,7 +12,7 @@
   font-size: 1.5rem;
   font-weight: 500;
   letter-spacing: 0.15em;
-  color: #5a8a6c;
+  color: var(--accent);
 }
 
 .duration-picker {
@@ -25,18 +25,18 @@
   width: 56px;
   height: 56px;
   border-radius: 50%;
-  border: 1.5px solid #364d3e;
+  border: 1.5px solid var(--border);
   font-size: 1.5rem;
-  color: #5a8a6c;
+  color: var(--accent);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #263328;
+  background: var(--surface);
   transition: background 0.2s;
 }
 
 .picker-btn:active {
-  background: #2f3d35;
+  background: var(--surface-alt);
 }
 
 .duration-display {
@@ -50,12 +50,12 @@
   font-size: 3.5rem;
   font-weight: 300;
   line-height: 1;
-  color: #ccd8d0;
+  color: var(--text);
 }
 
 .duration-unit {
   font-size: 0.85rem;
-  color: #7aa090;
+  color: var(--text-muted);
   margin-top: 0.25rem;
   letter-spacing: 0.1em;
 }
@@ -69,20 +69,20 @@
 
 .toggle-label {
   font-size: 0.9rem;
-  color: #7aa090;
+  color: var(--text-muted);
 }
 
 .toggle-switch {
   width: 44px;
   height: 26px;
   border-radius: 13px;
-  background: #364d3e;
+  background: var(--border);
   position: relative;
   transition: background 0.2s;
 }
 
 .toggle-switch.toggle-on {
-  background: #5a8a6c;
+  background: var(--accent);
 }
 
 .toggle-knob {
@@ -92,7 +92,7 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
-  background: #ccd8d0;
+  background: var(--text);
   transition: transform 0.2s;
 }
 
@@ -104,8 +104,8 @@
   width: 160px;
   padding: 0.9rem;
   border-radius: 2rem;
-  background: #5a8a6c;
-  color: #1e2b23;
+  background: var(--accent);
+  color: var(--bg);
   font-size: 1.1rem;
   font-weight: 500;
   letter-spacing: 0.05em;
@@ -113,7 +113,7 @@
 }
 
 .btn-start:active {
-  background: #6a9e7c;
+  background: var(--accent-hover);
 }
 
 .landing-links {
@@ -125,6 +125,6 @@
 
 .btn-history {
   font-size: 0.9rem;
-  color: #7aa090;
+  color: var(--text-muted);
   padding: 0.25rem 1rem;
 }

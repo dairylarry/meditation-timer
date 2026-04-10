@@ -4,11 +4,12 @@
 
 .progress-ring-bg {
   fill: none;
-  stroke: #2a3829;
+  stroke: var(--surface-alt);
 }
 
 .progress-ring-fg {
   fill: none;
+  stroke: var(--accent);
   stroke-linecap: round;
   transition: stroke 0.8s ease;
 }
