@@ -20,10 +20,11 @@ function pk(userId) {
 }
 
 export async function recordSession({ userId, date, completedAt, durationMinutes }) {
-  if (!userId) throw new Error('recordSession requires userId')
   // Always record the hint locally — Landing uses this to decide whether to show
-  // the reflect link without needing a network call.
+  // the reflect link without needing a network call. Do this before the userId
+  // guard so it works even if auth is still loading.
   try { localStorage.setItem('lastSessionDate', date) } catch (_) {}
+  if (!userId) throw new Error('recordSession requires userId')
   if (isDev) {
     console.log('[dev] skipping DynamoDB write:', { userId, date, completedAt, durationMinutes })
     return
