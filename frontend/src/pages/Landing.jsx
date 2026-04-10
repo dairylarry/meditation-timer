@@ -79,7 +79,7 @@ export default function Landing() {
           </button>
         )}
         <button className="btn-history" onClick={() => navigate('/log')}>
-          log without timer
+          + log without timer
         </button>
         <button className="btn-history" onClick={() => navigate('/history')}>
           history
