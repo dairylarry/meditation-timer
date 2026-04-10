@@ -18,24 +18,29 @@ export default function Landing() {
     if (savedShow !== null) setShowCountdown(savedShow === 'true')
   }, [])
 
-useEffect(() => {
-  if (!user?.userId) return
-  
-  // Get YYYY-MM-DD for the user's current local day
-  const now = new Date();
-  const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+  useEffect(() => {
+    if (!user?.userId) return
 
-  fetchSessions({ userId: user.userId })
-    .then(sessions => {
-      const found = sessions.some(s => {
-        // Ensure we are comparing just the 'YYYY-MM-DD' part of the session date
-        const sessionDate = s.date.includes('T') ? s.date.split('T')[0] : s.date;
-        return sessionDate === today;
-      });
-      setHasTodaySession(found);
-    })
-    .catch(() => {})
-}, [user?.userId]);
+    // Manually construct YYYY-MM-DD in local time
+    const now = new Date()
+    const yyyy = now.getFullYear()
+    const mm = String(now.getMonth() + 1).padStart(2, '0')
+    const dd = String(now.getDate()).padStart(2, '0')
+    const today = `${yyyy}-${mm}-${dd}`
+
+    fetchSessions({ userId: user.userId })
+      .then(sessions => {
+        // We use .startsWith(today) in case the session date is a full ISO string
+        // or a simple comparison if it's already just a date string.
+        const found = sessions.some(s => 
+          s.date && (s.date === today || s.date.startsWith(today))
+        )
+        setHasTodaySession(found)
+      })
+      .catch((err) => {
+        console.error("Failed to fetch sessions:", err)
+      })
+  }, [user?.userId])
 
   useEffect(() => {
     localStorage.setItem('lastDuration', String(duration))
