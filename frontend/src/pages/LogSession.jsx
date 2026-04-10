@@ -47,50 +47,48 @@ export default function LogSession() {
       <button className="btn-back" onClick={() => navigate('/')}>← back</button>
       <h1 className="log-session-title">log session</h1>
 
-      <div className="log-session-form">
-        <label className="log-session-label">time</label>
-        <input
-          className="log-session-time"
-          type="time"
-          value={time}
-          onChange={e => setTime(e.target.value)}
-        />
-
-        <label className="log-session-label">duration</label>
-        <div className="log-session-duration">
-          <button
-            className="log-picker-btn"
-            onClick={() => setDuration(d => Math.max(1, d - 1))}
-          >−</button>
-          <div className="log-duration-display">
-            <span className="log-duration-value">{duration}</span>
-            <span className="log-duration-unit">min</span>
+      <div className="log-session-body">
+        <div className="log-card">
+          <div className="log-row">
+            <span className="log-row-label">time</span>
+            <input
+              className="log-time-input"
+              type="time"
+              value={time}
+              onChange={e => setTime(e.target.value)}
+            />
           </div>
-          <button
-            className="log-picker-btn"
-            onClick={() => setDuration(d => d + 1)}
-          >+</button>
+          <div className="log-divider" />
+          <div className="log-row">
+            <span className="log-row-label">duration</span>
+            <div className="log-duration">
+              <button className="log-picker-btn" onClick={() => setDuration(d => Math.max(1, d - 1))}>−</button>
+              <span className="log-duration-value">{duration}<span className="log-duration-unit"> min</span></span>
+              <button className="log-picker-btn" onClick={() => setDuration(d => d + 1)}>+</button>
+            </div>
+          </div>
         </div>
 
-        <label className="log-session-label">note <span className="log-session-optional">(optional)</span></label>
-        <textarea
-          className="log-session-textarea"
-          placeholder="how was your session?"
-          value={note}
-          onChange={e => setNote(e.target.value)}
-          rows={4}
-        />
+        <div className="log-card">
+          <textarea
+            className="log-note-textarea"
+            placeholder="how was your session? (optional)"
+            value={note}
+            onChange={e => setNote(e.target.value)}
+            rows={4}
+          />
+        </div>
 
-        {error && <div className="log-session-error">{error}</div>}
-
-        <button
-          className="log-session-save"
-          onClick={handleSave}
-          disabled={saving}
-        >
-          {saving ? 'saving…' : 'save'}
-        </button>
+        {error && <div className="log-error">{error}</div>}
       </div>
+
+      <button
+        className="log-save-btn"
+        onClick={handleSave}
+        disabled={saving}
+      >
+        {saving ? 'saving…' : 'save'}
+      </button>
     </div>
   )
 }
