@@ -10,6 +10,18 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
+function formatTime(isoString) {
+  const d = new Date(isoString)
+  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
+}
+
+function formatSelectedDate(dateStr) {
+  // dateStr is YYYY-MM-DD — parse as local date to avoid timezone shifts
+  const [y, m, d] = dateStr.split('-').map(Number)
+  const date = new Date(y, m - 1, d)
+  return date.toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric' })
+}
+
 export default function History() {
   const navigate = useNavigate()
   const { user } = useAuth()
@@ -22,6 +34,7 @@ export default function History() {
   const now = new Date()
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
+  const [selectedDate, setSelectedDate] = useState(null)
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
 
@@ -56,6 +69,7 @@ export default function History() {
   }, [user?.userId])
 
   function goBack() {
+    setSelectedDate(null)
     if (month === 0) {
       setMonth(11)
       setYear(y => y - 1)
@@ -66,6 +80,7 @@ export default function History() {
 
   function goForward() {
     if (isCurrentMonth) return
+    setSelectedDate(null)
     if (month === 11) {
       setMonth(0)
       setYear(y => y + 1)
@@ -73,6 +88,10 @@ export default function History() {
       setMonth(m => m + 1)
     }
   }
+
+  const selectedSessions = selectedDate
+    ? (sessionsByDate[selectedDate] || []).slice().sort((a, b) => a.completedAt.localeCompare(b.completedAt))
+    : []
 
   return (
     <div className="history">
@@ -104,8 +123,26 @@ export default function History() {
             year={year}
             month={month}
             completedDates={completedDates}
-            sessionsByDate={sessionsByDate}
+            selectedDate={selectedDate}
+            onDayClick={setSelectedDate}
           />
+        </div>
+      )}
+
+      {!loading && !error && selectedDate && selectedSessions.length > 0 && (
+        <div className="history-detail">
+          <div className="history-detail-date">{formatSelectedDate(selectedDate)}</div>
+          {selectedSessions.map(s => (
+            <div key={s.completedAt} className="history-detail-session">
+              <div className="history-detail-row">
+                <span className="history-detail-time">{formatTime(s.completedAt)}</span>
+                <span className="history-detail-duration">{s.durationMinutes} min</span>
+              </div>
+              {s.note && (
+                <div className="history-detail-note">{s.note}</div>
+              )}
+            </div>
+          ))}
         </div>
       )}
 

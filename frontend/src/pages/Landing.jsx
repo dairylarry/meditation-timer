@@ -6,12 +6,17 @@ export default function Landing() {
   const navigate = useNavigate()
   const [duration, setDuration] = useState(10)
   const [showCountdown, setShowCountdown] = useState(false)
+  const [hasTodaySession, setHasTodaySession] = useState(false)
 
   useEffect(() => {
     const savedDuration = localStorage.getItem('lastDuration')
     if (savedDuration) setDuration(parseInt(savedDuration, 10))
     const savedShow = localStorage.getItem('showCountdown')
     if (savedShow !== null) setShowCountdown(savedShow === 'true')
+    // Show "reflect" link only if the user meditated today (localStorage hint).
+    const lastSessionDate = localStorage.getItem('lastSessionDate')
+    const today = new Date().toISOString().split('T')[0]
+    setHasTodaySession(lastSessionDate === today)
   }, [])
 
   useEffect(() => {
@@ -60,6 +65,11 @@ export default function Landing() {
       </button>
 
       <div className="landing-links">
+        {hasTodaySession && (
+          <button className="btn-history" onClick={() => navigate('/reflect')}>
+            reflect
+          </button>
+        )}
         <button className="btn-history" onClick={() => navigate('/history')}>
           history
         </button>

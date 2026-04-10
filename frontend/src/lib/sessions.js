@@ -1,5 +1,5 @@
 import { DynamoDBClient } from '@aws-sdk/client-dynamodb'
-import { DynamoDBDocumentClient, PutCommand, QueryCommand } from '@aws-sdk/lib-dynamodb'
+import { DynamoDBDocumentClient, PutCommand, QueryCommand, UpdateCommand } from '@aws-sdk/lib-dynamodb'
 
 const client = new DynamoDBClient({
   region: import.meta.env.VITE_AWS_REGION,
@@ -21,6 +21,9 @@ function pk(userId) {
 
 export async function recordSession({ userId, date, completedAt, durationMinutes }) {
   if (!userId) throw new Error('recordSession requires userId')
+  // Always record the hint locally — Landing uses this to decide whether to show
+  // the reflect link without needing a network call.
+  try { localStorage.setItem('lastSessionDate', date) } catch (_) {}
   if (isDev) {
     console.log('[dev] skipping DynamoDB write:', { userId, date, completedAt, durationMinutes })
     return
@@ -33,6 +36,21 @@ export async function recordSession({ userId, date, completedAt, durationMinutes
       date,
       durationMinutes,
     },
+  }))
+}
+
+export async function updateSessionNote({ userId, completedAt, note }) {
+  if (!userId || !completedAt) throw new Error('updateSessionNote requires userId and completedAt')
+  if (isDev) {
+    console.log('[dev] skipping DynamoDB note update:', { userId, completedAt, note })
+    return
+  }
+  await docClient.send(new UpdateCommand({
+    TableName: TABLE,
+    Key: { userId: pk(userId), completedAt },
+    UpdateExpression: 'SET #n = :note',
+    ExpressionAttributeNames: { '#n': 'note' },
+    ExpressionAttributeValues: { ':note': note },
   }))
 }
 

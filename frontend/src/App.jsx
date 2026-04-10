@@ -6,6 +6,7 @@ import History from './pages/History'
 import Brahmavihara from './pages/Brahmavihara'
 import Account from './pages/Account'
 import Login from './pages/Login'
+import Reflect from './pages/Reflect'
 import './styles/App.css'
 
 function AuthedRoutes() {
@@ -25,6 +26,7 @@ function AuthedRoutes() {
       <Route path="/session" element={<Session />} />
       <Route path="/history" element={<History />} />
       <Route path="/brahmavihara" element={<Brahmavihara />} />
+      <Route path="/reflect" element={<Reflect />} />
       <Route path="/account" element={<Account />} />
     </Routes>
   )

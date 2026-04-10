@@ -1,16 +1,8 @@
-import { useState } from 'react'
 import '../styles/MonthGrid.css'
 
 const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
 
-function formatTime(isoString) {
-  const d = new Date(isoString)
-  return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
-}
-
-export default function MonthGrid({ year, month, completedDates, sessionsByDate }) {
-  const [selectedDate, setSelectedDate] = useState(null)
-
+export default function MonthGrid({ year, month, completedDates, selectedDate, onDayClick }) {
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
@@ -34,14 +26,15 @@ export default function MonthGrid({ year, month, completedDates, sessionsByDate 
       <div
         key={dateStr}
         className={`month-cell ${completed ? 'month-cell-completed' : 'month-cell-missed'}${isSelected ? ' month-cell-selected' : ''}`}
-        onClick={() => setSelectedDate(isSelected ? null : (completed ? dateStr : null))}
+        onClick={() => {
+          if (!completed) return
+          onDayClick?.(isSelected ? null : dateStr)
+        }}
       >
         {d}
       </div>
     )
   }
-
-  const selectedSessions = selectedDate ? (sessionsByDate[selectedDate] || []) : []
 
   return (
     <div className="month-grid-container">
@@ -53,16 +46,6 @@ export default function MonthGrid({ year, month, completedDates, sessionsByDate 
       <div className="month-grid">
         {cells}
       </div>
-      {selectedDate && selectedSessions.length > 0 && (
-        <div className="month-detail">
-          {selectedSessions.map((s, i) => (
-            <div key={i} className="month-detail-row">
-              <span>{formatTime(s.completedAt)}</span>
-              <span>{s.durationMinutes} min</span>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

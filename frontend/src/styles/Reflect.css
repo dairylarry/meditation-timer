@@ -1,0 +1,142 @@
+.reflect {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-height: 100dvh;
+  padding: 2rem 1rem;
+  gap: 2rem;
+}
+
+.reflect-title {
+  font-size: 1.5rem;
+  font-weight: 500;
+  letter-spacing: 0.15em;
+  color: #3d5a4c;
+  margin-top: 0.5rem;
+}
+
+.reflect-status {
+  color: #6b8f7b;
+  font-size: 0.9rem;
+  margin-top: 2rem;
+}
+
+.reflect-error {
+  color: #c0392b;
+}
+
+.reflect-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+.reflect-picker-label {
+  font-size: 0.85rem;
+  color: #6b8f7b;
+  letter-spacing: 0.1em;
+  text-align: center;
+  margin-bottom: 0.25rem;
+}
+
+.reflect-picker-card {
+  font-family: inherit;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: 12px;
+  border: 1.5px solid #c2d4c9;
+  background: #fff;
+  color: #2c3e50;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.reflect-picker-card:active {
+  background: #eef4f0;
+}
+
+.reflect-picker-time {
+  font-weight: 500;
+}
+
+.reflect-picker-duration {
+  color: #6b8f7b;
+  font-size: 0.9rem;
+}
+
+.reflect-picker-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #3d5a4c;
+  margin-left: auto;
+}
+
+.reflect-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  width: 100%;
+  max-width: 360px;
+}
+
+.reflect-editor-context {
+  display: flex;
+  justify-content: center;
+  gap: 0.5rem;
+  font-size: 0.9rem;
+  color: #6b8f7b;
+  letter-spacing: 0.05em;
+}
+
+.reflect-textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  color: #2c3e50;
+  padding: 0.9rem;
+  border-radius: 12px;
+  border: 1.5px solid #c2d4c9;
+  background: #fff;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.reflect-textarea:focus {
+  border-color: #3d5a4c;
+}
+
+.reflect-saved {
+  font-size: 0.85rem;
+  color: #6b8f7b;
+  text-align: center;
+  letter-spacing: 0.05em;
+}
+
+.reflect-save {
+  font-family: inherit;
+  padding: 0.9rem;
+  border-radius: 2rem;
+  border: none;
+  background: #3d5a4c;
+  color: #fff;
+  font-size: 1rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.reflect-save:active {
+  background: #4e7360;
+}
+
+.reflect-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

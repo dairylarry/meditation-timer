@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import ProgressRing from '../components/ProgressRing'
 import { getOrCreateContext, startKeepalive, stopKeepalive, loadGong, playBuffer, closeContext } from '../lib/audio'
-import { recordSession } from '../lib/sessions'
+import { recordSession, updateSessionNote } from '../lib/sessions'
 import { useAuth } from '../context/AuthContext'
 import '../styles/Session.css'
 
@@ -21,6 +21,14 @@ export default function Session() {
   const [countdownLeft, setCountdownLeft] = useState(COUNTDOWN_SECONDS)
   const [finishTime, setFinishTime] = useState('')
 
+  // Note state for the done screen. `completedAt` is the ISO timestamp of the
+  // just-finished session, used as the SK for the DynamoDB update.
+  const [completedAt, setCompletedAt] = useState(null)
+  const [noteMode, setNoteMode] = useState('hidden') // hidden | editing | saved
+  const [noteText, setNoteText] = useState('')
+  const [noteSaving, setNoteSaving] = useState(false)
+  const [noteError, setNoteError] = useState('')
+
   const originRef = useRef(null)
   const intervalRef = useRef(null)
   const halfwayFiredRef = useRef(false)
@@ -34,11 +42,13 @@ export default function Session() {
     setRemaining(0)
 
     // Record to DynamoDB before playing end gong
+    const nowIso = new Date().toISOString()
+    setCompletedAt(nowIso)
     try {
       await recordSession({
         userId: user?.userId,
-        date: new Date().toISOString().split('T')[0],
-        completedAt: new Date().toISOString(),
+        date: nowIso.split('T')[0],
+        completedAt: nowIso,
         durationMinutes: duration,
       })
     } catch (e) {
@@ -54,6 +64,25 @@ export default function Session() {
     stopKeepalive()
     releaseWakeLock()
   }, [duration, user?.userId])
+
+  async function handleSaveNote() {
+    if (!completedAt || !user?.userId) return
+    setNoteSaving(true)
+    setNoteError('')
+    try {
+      await updateSessionNote({
+        userId: user.userId,
+        completedAt,
+        note: noteText.trim(),
+      })
+      setNoteMode('saved')
+    } catch (e) {
+      console.warn('Failed to save note:', e.message)
+      setNoteError('save failed, try again')
+    } finally {
+      setNoteSaving(false)
+    }
+  }
 
   function releaseWakeLock() {
     if (wakeLockRef.current) {
@@ -185,6 +214,40 @@ export default function Session() {
       {timerState === 'done' && (
         <div className="session-done">
           <div className="session-done-text">done</div>
+
+          {noteMode === 'hidden' && (
+            <button
+              className="session-note-link"
+              onClick={() => setNoteMode('editing')}
+            >
+              + add note
+            </button>
+          )}
+
+          {noteMode === 'editing' && (
+            <div className="session-note-editor">
+              <textarea
+                className="session-note-textarea"
+                placeholder="how was your session?"
+                value={noteText}
+                onChange={e => setNoteText(e.target.value)}
+                rows={5}
+                autoFocus
+              />
+              {noteError && <div className="session-note-error">{noteError}</div>}
+              <button
+                className="session-note-save"
+                onClick={handleSaveNote}
+                disabled={noteSaving || !noteText.trim()}
+              >
+                {noteSaving ? 'saving…' : 'save'}
+              </button>
+            </div>
+          )}
+
+          {noteMode === 'saved' && (
+            <div className="session-note-saved">note saved</div>
+          )}
         </div>
       )}
 

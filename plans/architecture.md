@@ -1026,3 +1026,89 @@ await docClient.send(new QueryCommand({
 | `undefined: undefined` on login error | SDK threw before making HTTP call (empty credentials) | Ensure `VITE_AWS_ACCESS_KEY_ID` and `VITE_AWS_SECRET_ACCESS_KEY` are set |
 | User status is `FORCE_CHANGE_PASSWORD` | `admin-create-user` run but `admin-set-user-password` not run | Run the second command in `create-user.sh` |
 | Login succeeds locally but fails in prod | Env vars not in GitHub Secrets / not passed to build step | Check `deploy.yml` `env:` block; verify secrets are set in repo settings |
+
+---
+
+## 16. Session Notes
+
+### Overview
+
+Each completed meditation session can optionally have a short reflection note attached to it. Notes are **per-session**, not per-day — if you meditate twice in one day, each session gets its own note. Notes can only be added or edited on the same day the session was completed; past days are read-only.
+
+### Where notes are added/edited
+
+1. **Done screen** (after a session finishes) — a subtle `+ add note` link appears below the "done" text. Tapping it expands an inline textarea + save button. Only "add" exists here (a session that just finished can't already have a note).
+
+2. **Reflect page** (`/reflect`) — reachable from a new "reflect" link on the Landing page (above "history"). The link is only shown if the user has at least one completed session today. Behavior:
+   - **1 session today** → opens the note editor for that session directly
+   - **2+ sessions today** → shows a picker (stacked list of session cards — time + duration), tap to pick one and open its editor
+   - The editor supports both add and edit (prefills with any existing note). Save button writes the note to DynamoDB.
+
+3. **History page** — notes are **read-only**. Tapping a date in the calendar shows a detail panel below the calendar grid with each session for that day: time, duration, and the note (if any).
+
+### Landing "reflect" link visibility
+
+The reflect link only appears when the user has meditated today. To avoid a DynamoDB query on every Landing mount, we use a localStorage hint: on session completion, write `lastSessionDate` (YYYY-MM-DD). On Landing mount, read it and compare to today — if equal, show the link.
+
+**Tradeoff:** if you complete a session on device A and immediately open the app on device B, device B won't show the reflect link until it fetches fresh data. For a single-user personal app this is acceptable.
+
+### Data model
+
+The note is stored as a `note` string attribute directly on the existing session item. No new table or item type.
+
+| Attribute | Type | Notes |
+|---|---|---|
+| `userId` (PK) | String | `USER#<cognito-sub>` (unchanged) |
+| `completedAt` (SK) | String | ISO timestamp (unchanged) |
+| `date` | String | YYYY-MM-DD (unchanged) |
+| `durationMinutes` | Number | (unchanged) |
+| `note` | String | **New.** Optional. Added/updated via `UpdateCommand`. |
+
+**Write pattern:** `UpdateCommand` with `SET #n = :note` — creates or replaces the attribute. Keyed by `userId` + `completedAt` so we target the exact session.
+
+**Read pattern:** no change — `fetchSessions` already returns all attributes via `Query`, so `note` comes through automatically.
+
+### `lib/sessions.js` additions
+
+```js
+export async function updateSessionNote({ userId, completedAt, note }) {
+  if (!userId || !completedAt) throw new Error('updateSessionNote requires userId and completedAt')
+  if (isDev) {
+    console.log('[dev] skipping DynamoDB note update:', { userId, completedAt, note })
+    return
+  }
+  await docClient.send(new UpdateCommand({
+    TableName: TABLE,
+    Key: { userId: `USER#${userId}`, completedAt },
+    UpdateExpression: 'SET #n = :note',
+    ExpressionAttributeNames: { '#n': 'note' },
+    ExpressionAttributeValues: { ':note': note },
+  }))
+}
+```
+
+### IAM policy update
+
+The IAM user needs `dynamodb:UpdateItem` on the table in addition to the existing `PutItem` and `Query`.
+
+### Component changes
+
+| File | Change |
+|---|---|
+| `lib/sessions.js` | Add `updateSessionNote()`; `recordSession()` also writes `localStorage.lastSessionDate` |
+| `pages/Session.jsx` | Store session's `completedAt` in state; after "done", show `+ add note` link → expands textarea; call `updateSessionNote` on save |
+| `pages/Reflect.jsx` (NEW) | Fetch today's sessions; single-session auto-opens editor; multi-session shows picker |
+| `pages/Landing.jsx` | Conditionally show "reflect" link based on `localStorage.lastSessionDate === today` |
+| `pages/History.jsx` | Manage `selectedDate` state; pass `onDayClick` to MonthGrid; render detail panel below grid with each session's time, duration, and note |
+| `components/MonthGrid.jsx` | Remove internal `selectedDate` state; accept `selectedDate` + `onDayClick` props; remove inline detail rendering (now handled by History) |
+| `App.jsx` | Add `/reflect` route |
+
+### Edge cases
+
+| Scenario | Behavior |
+|---|---|
+| Session completes, user adds note, then taps back without saving | Note is not persisted — cleanup fires, navigation returns to landing |
+| User opens reflect page but has no sessions today (stale localStorage hint) | Show "no sessions today" empty state with back button |
+| User adds a note offline | `updateSessionNote` fails silently (logged to console). UI shows as saved optimistically. Not retried. |
+| Multiple sessions today, user picks one, then goes back | Return to picker, not landing |
+| Note contains newlines / long text | Textarea supports multiline; no hard character limit enforced client-side |

@@ -55,9 +55,13 @@
 
 .session-done {
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   flex: 1;
+  gap: 2rem;
+  width: 100%;
+  max-width: 360px;
 }
 
 .session-done-text {
@@ -65,4 +69,78 @@
   font-weight: 400;
   color: #3d5a4c;
   letter-spacing: 0.1em;
+}
+
+.session-note-link {
+  font-size: 0.9rem;
+  color: #6b8f7b;
+  padding: 0.5rem 1rem;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.session-note-link:active {
+  color: #3d5a4c;
+}
+
+.session-note-editor {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1rem;
+  width: 100%;
+  padding: 0 1rem;
+}
+
+.session-note-textarea {
+  font-family: inherit;
+  font-size: 1rem;
+  color: #2c3e50;
+  padding: 0.9rem;
+  border-radius: 12px;
+  border: 1.5px solid #c2d4c9;
+  background: #fff;
+  resize: none;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.session-note-textarea:focus {
+  border-color: #3d5a4c;
+}
+
+.session-note-error {
+  font-size: 0.8rem;
+  color: #c0392b;
+  text-align: center;
+}
+
+.session-note-save {
+  font-family: inherit;
+  padding: 0.8rem;
+  border-radius: 2rem;
+  border: none;
+  background: #3d5a4c;
+  color: #fff;
+  font-size: 0.95rem;
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  cursor: pointer;
+  transition: background 0.2s, opacity 0.2s;
+}
+
+.session-note-save:active {
+  background: #4e7360;
+}
+
+.session-note-save:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.session-note-saved {
+  font-size: 0.9rem;
+  color: #6b8f7b;
+  letter-spacing: 0.05em;
 }
