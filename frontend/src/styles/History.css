@@ -50,22 +50,23 @@
   font-weight: 500;
   min-width: 140px;
   text-align: center;
-  padding: 0.3rem 0.75rem;
+  padding: 0.3rem 0.5rem;
   border-radius: 8px;
-  border: 1.5px solid var(--border);
-  background: var(--surface);
+  border: none;
+  background: transparent;
   -webkit-appearance: none;
-  transition: background 0.15s;
+  transition: opacity 0.15s;
 }
 
 .history-month-btn:active {
-  background: var(--surface-alt);
+  opacity: 0.6;
 }
 
 .history-month-caret {
-  font-size: 0.7rem;
-  margin-left: 0.25rem;
+  font-size: 0.65rem;
+  margin-left: 0.3rem;
   color: var(--text-muted);
+  vertical-align: middle;
 }
 
 .history-picker {
@@ -73,9 +74,10 @@
   max-width: 360px;
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 14px;
-  padding: 1rem;
+  border-radius: 16px;
+  padding: 1rem 1rem 0.75rem;
   margin-bottom: 0.5rem;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.07);
 }
 
 .history-picker-year-nav {
@@ -83,35 +85,37 @@
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.75rem;
+  padding: 0 0.25rem;
 }
 
 .history-picker-year-arrow {
   font-size: 1rem;
   color: var(--text-muted);
-  padding: 0.25rem 0.5rem;
+  padding: 0.25rem 0.6rem;
 }
 
 .history-picker-year-arrow:disabled {
-  opacity: 0.25;
+  opacity: 0.2;
   cursor: default;
 }
 
 .history-picker-year {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   font-weight: 500;
   color: var(--text);
+  letter-spacing: 0.05em;
 }
 
 .history-picker-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 0.4rem;
+  gap: 0.25rem;
 }
 
 .history-picker-month {
   font-family: inherit;
   font-size: 0.85rem;
-  padding: 0.5rem 0;
+  padding: 0.65rem 0;
   border-radius: 8px;
   border: none;
   background: transparent;
@@ -120,12 +124,12 @@
   transition: background 0.15s;
 }
 
-.history-picker-month:hover:not(:disabled) {
+.history-picker-month:active:not(:disabled) {
   background: var(--surface-alt);
 }
 
 .history-picker-month:disabled {
-  opacity: 0.25;
+  opacity: 0.2;
   cursor: default;
 }
 
