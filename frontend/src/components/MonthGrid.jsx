@@ -1,14 +1,13 @@
 import '../styles/MonthGrid.css'
 
-const DAY_LABELS = ['M', 'T', 'W', 'T', 'F', 'S', 'S']
+const DAY_LABELS = ['S', 'M', 'T', 'W', 'T', 'F', 'S']
 
 export default function MonthGrid({ year, month, completedDates, selectedDate, onDayClick }) {
   const firstDay = new Date(year, month, 1)
   const daysInMonth = new Date(year, month + 1, 0).getDate()
 
-  // getDay() returns 0=Sun, we want 0=Mon
-  let startOffset = firstDay.getDay() - 1
-  if (startOffset < 0) startOffset = 6
+  // getDay() returns 0=Sun, which is column 0 — no adjustment needed
+  const startOffset = firstDay.getDay()
 
   const cells = []
 
