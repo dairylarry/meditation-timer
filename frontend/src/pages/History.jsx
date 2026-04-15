@@ -10,6 +10,11 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ]
 
+const MONTH_ABBR = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+]
+
 function formatTime(isoString) {
   const d = new Date(isoString)
   return d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' })
@@ -35,6 +40,8 @@ export default function History() {
   const [year, setYear] = useState(now.getFullYear())
   const [month, setMonth] = useState(now.getMonth())
   const [selectedDate, setSelectedDate] = useState(null)
+  const [pickerOpen, setPickerOpen] = useState(false)
+  const [pickerYear, setPickerYear] = useState(now.getFullYear())
 
   const isCurrentMonth = year === now.getFullYear() && month === now.getMonth()
 
@@ -67,6 +74,18 @@ export default function History() {
       .catch(e => setError(e.message))
       .finally(() => setLoading(false))
   }, [user?.userId])
+
+  // Set of 'YYYY-MM' strings that have at least one session
+  const monthsWithData = new Set(
+    [...completedDates].map(d => d.slice(0, 7))
+  )
+
+  function selectPickerMonth(m) {
+    setMonth(m)
+    setYear(pickerYear)
+    setSelectedDate(null)
+    setPickerOpen(false)
+  }
 
   function goBack() {
     setSelectedDate(null)
@@ -106,13 +125,57 @@ export default function History() {
         ) : (
           <span className="history-arrow history-arrow-hidden">←</span>
         )}
-        <span className="history-month-label">{MONTH_NAMES[month]} {year}</span>
+        <button
+          className="history-month-btn"
+          onClick={() => { setPickerYear(year); setPickerOpen(v => !v) }}
+        >
+          {MONTH_NAMES[month]} {year} <span className="history-month-caret">▾</span>
+        </button>
         {!isCurrentMonth ? (
           <button className="history-arrow" onClick={goForward}>→</button>
         ) : (
           <span className="history-arrow history-arrow-hidden">→</span>
         )}
       </div>
+
+      {pickerOpen && (
+        <div className="history-picker">
+          <div className="history-picker-year-nav">
+            <button
+              className="history-picker-year-arrow"
+              onClick={() => setPickerYear(y => y - 1)}
+              disabled={earliestDate && pickerYear <= earliestDate.year}
+            >←</button>
+            <span className="history-picker-year">{pickerYear}</span>
+            <button
+              className="history-picker-year-arrow"
+              onClick={() => setPickerYear(y => y + 1)}
+              disabled={pickerYear >= now.getFullYear()}
+            >→</button>
+          </div>
+          <div className="history-picker-grid">
+            {MONTH_ABBR.map((abbr, m) => {
+              const isFuture = pickerYear > now.getFullYear() ||
+                (pickerYear === now.getFullYear() && m > now.getMonth())
+              const hasData = monthsWithData.has(
+                `${pickerYear}-${String(m + 1).padStart(2, '0')}`
+              )
+              const isActive = pickerYear === year && m === month
+              const disabled = isFuture || (!hasData && !isActive)
+              return (
+                <button
+                  key={m}
+                  className={`history-picker-month${isActive ? ' history-picker-month-active' : ''}`}
+                  disabled={disabled}
+                  onClick={() => selectPickerMonth(m)}
+                >
+                  {abbr}
+                </button>
+              )
+            })}
+          </div>
+        </div>
+      )}
 
       {loading && <p className="history-status">Loading…</p>}
       {error && <p className="history-status history-error">Failed to load: {error}</p>}

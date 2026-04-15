@@ -43,6 +43,98 @@
   font-weight: 500;
 }
 
+.history-month-btn {
+  font-size: 1rem;
+  color: var(--text);
+  -webkit-text-fill-color: var(--text);
+  font-weight: 500;
+  min-width: 140px;
+  text-align: center;
+  padding: 0.3rem 0.75rem;
+  border-radius: 8px;
+  border: 1.5px solid var(--border);
+  background: var(--surface);
+  -webkit-appearance: none;
+  transition: background 0.15s;
+}
+
+.history-month-btn:active {
+  background: var(--surface-alt);
+}
+
+.history-month-caret {
+  font-size: 0.7rem;
+  margin-left: 0.25rem;
+  color: var(--text-muted);
+}
+
+.history-picker {
+  width: 100%;
+  max-width: 360px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  padding: 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.history-picker-year-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 0.75rem;
+}
+
+.history-picker-year-arrow {
+  font-size: 1rem;
+  color: var(--text-muted);
+  padding: 0.25rem 0.5rem;
+}
+
+.history-picker-year-arrow:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.history-picker-year {
+  font-size: 0.95rem;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.history-picker-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 0.4rem;
+}
+
+.history-picker-month {
+  font-family: inherit;
+  font-size: 0.85rem;
+  padding: 0.5rem 0;
+  border-radius: 8px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.history-picker-month:hover:not(:disabled) {
+  background: var(--surface-alt);
+}
+
+.history-picker-month:disabled {
+  opacity: 0.25;
+  cursor: default;
+}
+
+.history-picker-month-active {
+  background: var(--accent) !important;
+  color: var(--surface);
+  font-weight: 600;
+}
+
 .history-status {
   color: var(--text-muted);
   font-size: 0.9rem;
